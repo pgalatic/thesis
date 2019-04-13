@@ -20,16 +20,18 @@ ___
 DAVIS_ROOT = '<Your DAVIS path>'
 ```
 4) Download [weights.pth](https://www.dropbox.com/s/gt0kivrb2hlavi2/weights.pth?dl=0) and place it the same folde as run.py.
-5) To run single-object video object segmentation on DAVIS-2016 validation.
+5) Split your video into frames. Place a copy of the frames in '<Your DAVIS path>/data/DAVIS/JPEGImages/480p/<your video name>'
+6) Create a mask for your first frame (colors 6 and 7 of watershed_driver.py should be fine). Place this mask in '<Your DAVIS path>/data/DAVIS/Annotations/480p/<your video name>'. Note: This requires the target of segmentation to be visible on the first frame.
+7) Edit the files in '<Your DAVIS path>/data/DAVIS/ImageSets/2017' to contain <your video name>. 
+8) To run single-object video object segmentation on DAVIS-2016 validation.
 ``` 
 python run.py
 ```
-6) To run multi-object video object segmentation on DAVIS-2017 validation.
+9) To run multi-object video object segmentation on DAVIS-2017 validation (assuming your mask has more than two colors).
 ``` 
 python run.py -MO
 ```
-7) Results will be saved in `./results/SO` or `./results/MO`.
-
+10) Results will be saved in `./results/SO` or `./results/MO`.
 
 ## Use
 #### This software is for Non-commercial Research Purposes only.

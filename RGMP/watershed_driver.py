@@ -169,4 +169,4 @@ if __name__ == '__main__':
     except:
         fn = 'fruits.jpg'
     print(__doc__)
-    App(fn).run()
+    App(cv.samples.findFile(fn)).run()
