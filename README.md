@@ -30,8 +30,8 @@ Additionally, various files have been updated with better documentation and more
 
 A lot of the following is "easier said than done", but *in theory* the method is relatively simple.
 1) Acquire a video. The video should have no jump-cuts and should have as high a frame rate as possible (resolution only matters to the extent that your PC has enough memory to run neural style transfer; my computer struggled with 360p but your mileage may vary, especially if you parallelize). The video should also have a clear "target", i.e. a person running, a car, or some other large, contiguous object that moves through the scene. This target should be visible during the first frame--truncate the video as necessary to meet this condition.
-2) Use RGMP to segment the target from the background of the video and generate a set of masks. See the [README](RGMP/README_UPDATED.md) for details.
-3) Use Fast Artistic Videos to produce a set of stylized frames. See the [README](fast-artistic-videos/README_UPDATED.md) for details.
+2) Use RGMP to segment the target from the background of the video and generate a set of masks.
+3) Use Fast Artistic Videos to produce a set of stylized frames.
 4) Split the video into a set of frames. Organize them with the other sets of frames into folders like so:
 ```
 # let's say my video is named 'shark.mp4'

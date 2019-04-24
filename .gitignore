@@ -1,5 +1,6 @@
 *.mp4
 *.lua
+*.pdf
 fast-artistic-videos/*/
 RGMP/*/
 figures/
