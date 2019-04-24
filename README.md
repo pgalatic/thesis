@@ -1,7 +1,7 @@
 # Style Transfer Sandbox
 A computer vision project by Paul Galatic.
 
-# Background
+## Background
 
 This work is a combined implementation of two works by Oh et al. and Ruder et al. It is simply an interesting combined use case for these two ideas. The basic premise is this: "What if we could stylize all but parts of an image?" 
 
@@ -9,7 +9,7 @@ In this project, the foreground is segmented from the background by Reference-Gu
 
 Some examples of this work can be found in the "results" directory. They are found from YouTube and I make no credit of original ownership.
 
-# Installation
+## Installation
 
 Some elements of what is required are included in requirements.txt.
 ```
@@ -26,12 +26,12 @@ Updated versions of some of the files in those repositories are included in this
 
 Additionally, various files have been updated with better documentation and more readable structures, and some files (such as 'RGMP/watershed_driver') are not present at all in the original repositories and are included for the convenience of the user.
 
-# How to Use
+## How to Use
 
 A lot of the following is "easier said than done", but *in theory* the method is relatively simple.
 1) Acquire a video. The video should have no jump-cuts and should have as high a frame rate as possible (resolution only matters to the extent that your PC has enough memory to run neural style transfer; my computer struggled with 360p but your mileage may vary, especially if you parallelize). The video should also have a clear "target", i.e. a person running, a car, or some other large, contiguous object that moves through the scene. This target should be visible during the first frame--truncate the video as necessary to meet this condition.
-2) Use RGMP to segment the target from the background of the video and generate a set of masks. See the [README](RGMP/README.md) for details.
-3) Use Fast Artistic Videos to produce a set of stylized frames. See the [README](fast-artistic-videos/README.md) for details.
+2) Use RGMP to segment the target from the background of the video and generate a set of masks. See the [README](RGMP/README_UPDATED.md) for details.
+3) Use Fast Artistic Videos to produce a set of stylized frames. See the [README](fast-artistic-videos/README_UPDATED.md) for details.
 4) Split the video into a set of frames. Organize them with the other sets of frames into folders like so:
 ```
 # let's say my video is named 'shark.mp4'
@@ -58,7 +58,7 @@ In keeping with the example above:
 ```
 This command will produce two videos at the top level of the 'shark' folder; one with audio, the other without.
 
-## Known issues / Future Work
+## Known Issues / Future Work
 
 * For some reason, the ffmpeg commands in 'assemble.sh' create videos that cannot be played in Chrome, though they play on Windows Media Player and VLC just fine. Making the videos possible to play cross-platform is a priority.
 * Finding better example videos for high-resolution samples would be worthwhile.
