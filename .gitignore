@@ -1,4 +1,10 @@
 *.mp4
+*.lua
+*.pdf
+fast-artistic-videos/*/
+RGMP/*/
+figures/
+*static
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

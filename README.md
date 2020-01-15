@@ -2,11 +2,13 @@
 ## with Fast Artistic Videos by Ruder & Dosovitskiy
 A thesis by Paul Galatic.
 
-# Background
+## Background
 
 TODO
 
-# Installation
+Some examples of this work can be found in the "results" directory. They are found from YouTube and I make no credit of original ownership.
+
+## Installation
 
 Some elements of what is required are included in requirements.txt.
 ```
@@ -15,11 +17,11 @@ pip install -r requirements.txt
 Additional dependencies include:
 * FFMPEG (see [here](https://www.ffmpeg.org/))
 
-# How to Use
+## How to Use
 
 TODO
 
-## Known issues
+## Known Issues / Future Work
 
 TODO
 
