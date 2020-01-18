@@ -18,13 +18,6 @@ import subprocess
 # CONSTANTS
 TIME_FORMAT = '%H:%M:%S'
 
-def log(*args, nostamp=False):
-    '''More informative print debugging'''
-    t = time.strftime(TIME_FORMAT, time.localtime())
-    s = '\t'.join([str(arg) for arg in args])
-    if not nostamp: s = f'[{t}]: ' + s
-    print(s)
-
 def parse_args():
     '''Parses arguments'''
     ap = argparse.ArgumentParser()
@@ -39,14 +32,11 @@ def parse_args():
 def main():
     '''Driver program'''
     args = parse_args()
-    log('Starting...')
+    print('Starting...')
 
-    workdir = os.getcwd() # remember our original working directory
-    os.chdir(os.path.join(os.path.abspath(sys.path[0]), 'core/'))
-    subprocess.call(['stylizeVideo.sh', '../' + args.target, '../' + args.style])
-    os.chdir(workdir) # change back after executing the script
+    subprocess.Popen(['core/stylizeVideo.sh', args.target, args.style], cwd=os.getcwd() + '/core/')
     
-    log('...finished.')
+    print('...finished.')
     return 0
 
 if __name__ == '__main__':
