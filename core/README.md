@@ -64,8 +64,6 @@ luarocks install image
 luarocks install lua-cjson
 ```
 
-**If an error occurs with the normal Torch installation, try the old [Torch Distro](https://github.com/torch/distro), which has worked in the past.** --Paul Galatic
-
 ### (Optional) GPU Acceleration
 
 If you have an NVIDIA GPU, you can accelerate all operations with CUDA.
