@@ -1,24 +1,33 @@
 # author: Paul Galatic
 # Script assumes that .deb package files for cuda/cudnn are already present
 
+# Update package lists
+sudo apt-get -y update
+sudo apt-get -y upgrade
+
 # Install FFMPEG
 sudo apt-get -y install ffmpeg
 
-# Install CUDA
-sudo dpkg -i cuda-repo-ubuntu1604_9.2.148-1_amd64.deb
-sudo apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/7fa2af80.pub
-sudo apt-get -y update
-sudo apt-get -y install cuda-libraries-9-2
-sudo apt-get -y install cuda-9-2
+# Install CUDA v7.5
+sudo dpkg -i cuda-repo-ubuntu1404_7.5-18_amd64.deb
+sudo apt-get update
+sudo apt-get install cuda-7-5
+# Let Cmake find CUDA
+export PATH=/usr/local/cuda/bin${PATH:+:${PATH}}
 
-# Install CUDNN (TODO)
-sudo dpkg -i libcudnn*
+# Install CUDNN v5.0
+tar -xzvf cudnn-8.0-linux-x64-v5.1.tgz
+sudo cp cuda/include/cudnn.h /usr/local/cuda/include
+sudo cp cuda/lib64/libcudnn* /usr/local/cuda/lib64
+sudo chmod a+r /usr/local/cuda/include/cudnn.h /usr/local/cuda/lib64/libcudnn*
+export CUDNN_PATH="/usr/local/cuda/lib64/libcudnn.so.5"
 
-# Install Torch with LUA 5.1
+# Install the latest Torch
 git clone https://github.com/torch/distro.git ~/torch --recursive
 cd ~/torch; bash install-deps;
-sudo export TORCH_NVCC_FLAGS="-D__CUDA_NO_HALF_OPERATORS__"
-TORCH_LUA_VERSION=LUA51 ./install.sh
+export TORCH_NVCC_FLAGS="-D__CUDA_NO_HALF_OPERATORS__"
+./install.sh
+./update.sh
 
 cd ~/
 
@@ -27,15 +36,16 @@ source ~/.bashrc
 source ~/.profile
 
 # Add required lua packages
-sudo luarocks install torch
-sudo luarocks install nn
-sudo luarocks install image
-sudo luarocks install lua-cjson
-sudo luarocks install cutorch
-sudo luarocks install cunn
+luarocks install torch
+luarocks install nn
+luarocks install image
+luarocks install lua-cjson
+luarocks install cutorch
+luarocks install cunn
+luarocks install cudnn
 
-mkdir stnbhwd; cd stnbhwd
-sudo luarocks make stnbdhw-scm-1.rockspec
+cd ~/thesis/core/stnbhw
+luarocks make stnbdhw-scm-1.rockspec
 cd ~/
 
 # Clean installation
