@@ -52,7 +52,13 @@ TARGET_LINK_LIBRARIES(stn luaT TH)
 FIND_PACKAGE(CUDA 5.5)
 
 IF (CUDA_FOUND)
-  LIST(APPEND CUDA_NVCC_FLAGS "-arch=sm_20")
+  LIST(APPEND CUDA_NVCC_FLAGS "-arch=sm_50 \
+-gencode=arch=compute_50,code=sm_50 \
+-gencode=arch=compute_52,code=sm_52 \
+-gencode=arch=compute_60,code=sm_60 \
+-gencode=arch=compute_61,code=sm_61 \
+-gencode=arch=compute_70,code=sm_70 \ 
+-gencode=arch=compute_70,code=compute_70")
 
   INCLUDE_DIRECTORIES("${Torch_INSTALL_INCLUDE}/THC")
   SET(src-cuda init.cu)
