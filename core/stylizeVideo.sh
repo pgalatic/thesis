@@ -89,7 +89,7 @@ fi
 # This launches optical flow computation (if it is not already computed)
 # This section COULD be buggy if you exit computation just before the end of
 # an original computation and try to start it later, but its primary purpose
-# is to prevent the Nice Bash from flooding the scren with messages 
+# is to prevent the Nice Bash from flooding the screen with messages 
 # unnecessarily
 echo ""
 if [ -e ${filename}/flow_$resolution/reliable_1_2.pgm ]; then

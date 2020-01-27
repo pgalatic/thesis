@@ -16,7 +16,7 @@
 bool readMiddlebury(const char* filename, CTensor<float>& flow) {
   FILE *stream = fopen(filename, "rb");
   if (stream == 0) {
-    std::cout << "Could not open " << filename << std::endl;
+    std::cout << "\nCould not open " << filename << std::endl;
     return false;
   }
   float help;
