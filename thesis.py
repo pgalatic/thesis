@@ -10,9 +10,12 @@ import pdb
 import sys
 import glob
 import time
+import errno
 import shutil
 import pathlib
 import argparse
+import platform
+import threading
 import subprocess
 import numpy as np
 
@@ -29,10 +32,12 @@ def parse_args():
     ap = argparse.ArgumentParser()
     
     # Required arguments
-    ap.add_argument('target', type=str,
+    ap.add_argument('content', type=str,
         help='The path to the video to stylize.')
     ap.add_argument('style', type=str,
         help='The path to the model used for stylization')
+    ap.add_argument('nfs', type=str,
+        help='The directory of the mounted NFS file server where images are to be shared.')
         
     # Optional arguments
     ap.add_argument('--processor', type=str, nargs='?', default='ffmpeg',
@@ -44,80 +49,161 @@ def parse_args():
     ap.add_argument('--resolution', type=str, nargs='?', default=RESOLUTION_DEFAULT,
         help='The width to process the video at in the format w:h [Original resolution]')
     ap.add_argument('--downsamp_factor', type=str, nargs='?', default='2',
-        help='The downsampling factor for optical flow calculations. Increase this slightly if said calculations are too slow or memory-intense for your machine. [2]')
-        
+        help='The downsampling factor for optical flow calculations. Increase this slightly if said calculations are too slow or memory-intense for your machine. [2]')    
     
     return ap.parse_args()
 
-def check_video_processor(processor):
+def check_deps(processor):
     check = shutil.which(processor)
     if not check:
         print('Video processor {p} not installed. Aborting'.format(p=processor))
         sys.exit(1)
+    
+    if not (os.path.exists('deepmatching-static') and os.path.exists('deepflow2-static')):
+        print('Deepmatching/Deepflow static binaries are missing. Aborting')
+        sys.exit(1)
+    else:
+        # Ensure that Deepmatching/Deepflow can be executed.
+        subprocess.Popen(['chmod', '+x', 'deepmatching-static'])
+        subprocess.Popen(['chmod', '+x', 'deepflow2-static'])
 
-def split_frames(processor, target, resolution, dirname):    
+def split_frames(processor, content, resolution, dirname):    
     # Don't split the video if we've already done so.
     if not os.path.isfile(dirname / 'frame_00001.ppm'):
         if not resolution == RESOLUTION_DEFAULT:
-            subprocess.Popen([processor, '-i', target, '-vf', 'scale=' + resolution, 
+            subprocess.Popen([processor, '-i', content, '-vf', 'scale=' + resolution, 
                 str(dirname / FRAME_NAME)])
         else:
-            subprocess.Popen([processor, '-i', target, str(dirname / FRAME_NAME)])
+            subprocess.Popen([processor, '-i', content, str(dirname / FRAME_NAME)])
     
     # Return the number of frames.
     return len(glob.glob1(dirname, '*.ppm'))
 
 def most_recent_optflo(dirname, resolution):
     # Check to see if the optical flow folder exists.
-    flow = dirname / ('flow_' + resolution)
+    flow = str(dirname / ('flow_' + resolution + '/'))
     if not os.path.isdir(flow):
         # If it doesn't exist, then there are no optflow files, and we start from scratch.
-        return 0
+        return 1
 
-    # Get a list of all the calculations done so far.
-    names = [os.path.splitext(name)[0] for name in os.listdir(flow)]
-    # Get a list of the numbers in those names.
-    pairs = [[int(fragment) for fragment in name.split('_') if fragment.isdigit()] for name in names]
-    # Use numpy to find the maximum of all the values in those lists.
-    numbers = np.array(pairs)
-    return np.max(numbers)
+    # The most recent frame half the number of .flo files (as there are two for each frame) plus one.
+    return (len(glob.glob1(flow, '*.flo')) // 2) + 1
 
 def most_recent_stylize(dirname):
     # Count the number of output files and return.
-    num = len(glob.glob1(dirname, '*.png'))
-    return num + 1
+    return len(glob.glob1(dirname, '*.png'))
 
-def optical_flow_computation(target, resolution, downsamp_factor, last_optflow, dirname):
-    src = str(dirname / FRAME_NAME)
-    dst = str(dirname / ('flow_' + resolution + '/'))
+def get_job(dirname, resolution, num_frames):
+    next_job = most_recent_optflo(dirname, resolution)
+    # In order for an optflow job to be possible, there needs to be a valid pair of frames.
+    if next_job >= num_frames:
+        return None
+    return next_job
+
+def claim_job(job, flow, placeholder):
+    # Try to create a placeholder. If this fails, return False.
+    try:
+        with open(placeholder, 'x') as handle:
+            handle.write('PLACEHOLDER CREATED BY {name}'.format(name=platform.node()))
+    except FileExistsError:
+        return False
+    return True
+
+def run_job(job, dirname, flow, downsamp_factor):
+    if not job or job < 0:
+        raise Exception('Bad job passed to run_job: {job}'.format(job=job))
     
-    subprocess.Popen(['nice', 'bash', 'core/makeOptFlow.sh', src, dst, str(last_optflow), downsamp_factor, '&'])
+    placeholder = flow / (os.path.splitext(FRAME_NAME)[0] % job + '.plc')
+    
+    # Create a placeholder for this job. If the claim fails, return.
+    if not claim_job(job, flow, placeholder): return False
+    
+    start = dirname / (FRAME_NAME % job)
+    end = dirname / (FRAME_NAME % (job + 1))
+    forward_name = flow / 'forward_{i}_{j}.flo'.format(i=job, j=job+1)
+    backward_name = flow / 'backward_{j}_{i}.flo'.format(i=job, j=job+1)
+    reliable_forward = flow / 'reliable_{i}_{j}.pgm'.format(i=job, j=job+1)
+    reliable_backward = flow / 'reliable_{j}_{i}.pgm'.format(i=job, j=job+1)
+    
+    # FIXME: These programs are extremely slow. We should pull to local for calculations.
+    
+    # Compute forward optical flow.
+    print('Computing forward optical flow for job {job}.'.format(job=job))
+    forward_dm = subprocess.Popen([
+        './deepmatching-static', start, end, '-nt', '0', '-downscale', downsamp_factor
+    ], stdout=subprocess.PIPE)
+    forward_df = subprocess.run([
+        './deepflow2-static', start, end, forward_name, '-match'
+    ], stdin=forward_dm.stdout)
+    
+    # Compute backward optical flow.
+    print('Computing backward optical flow for job {job}.'.format(job=job))
+    backward_dm = subprocess.Popen([
+        './deepmatching-static', end, start, '-nt', '0', '-downscale', downsamp_factor, '|',
+    ], stdout=subprocess.PIPE)
+    backward_df = subprocess.run([
+        './deepflow2-static', end, start, backward_name, '-match'
+    ], stdin=backward_dm.stdout)
+    
+    # Compute consistency check for forwards optical flow.
+    print('Computing consistency check for forwards optical flow.')
+    con1 = subprocess.run([
+        './core/consistencyChecker/consistencyChecker',
+        forward_name, backward_name, reliable_forward, start
+    ])
+    
+    # Compute consistency check for backwards optical flow.
+    print('Computing consistency check for backwards optical flow.')
+    con2 = subprocess.run([
+        './core/consistencyChecker/consistencyChecker',
+        backward_name, forward_name, reliable_backward, end
+    ])
+    
+    # Now that the .flo files have been created, there's no reason to keep the placeholder.
+    os.remove(placeholder)
+    sys.exit(0)
+    
+    return True
+
+def optflow(resolution, downsamp_factor, num_frames, dirname):    
+    flow = dirname / ('flow_' + resolution + '/')
+    if not os.path.isdir(flow):
+        os.mkdir(flow)
+    
+    job = get_job(dirname, resolution, num_frames)
+    while job is not None:
+        print('Searching for a job...')
+        success = run_job(job, dirname, flow, downsamp_factor)
+        if success:
+            # If we finished our job, other jobs may have completed in the 
+            # meantime, so we should check from scratch.
+            job = get_job(dirname, resolution, num_frames)
+        else:
+            # We narrowly missed our chance to complete a job, so we should 
+            # try the next one available.
+            job += 1
 
 def main():
     '''Driver program'''
     args = parse_args()
     
     # Make output folder(s), if necessary
-    if not os.path.exists('results'):
-        os.mkdir('results')
-    dirname = pathlib.Path('results') / os.path.basename(os.path.splitext(args.target)[0])
+    dirname = pathlib.Path(args.nfs) / os.path.basename(os.path.splitext(args.content)[0])
     if not os.path.exists(dirname):
         os.mkdir(dirname)
         
-    # Check to see if video processor is installed
-    check_video_processor(args.processor)
+    # Preliminary operations to make sure that the environment is set up properly.
+    check_deps(args.processor)
     
     # Split video into individual frames
-    num_frames = split_frames(args.processor, args.target, args.resolution, dirname)
+    num_frames = split_frames(args.processor, args.content, args.resolution, dirname)
         
     # Find the most recent stylization and optical flow calculation.
-    last_optflow = most_recent_optflo(dirname, args.resolution)
-    continue_with = most_recent_stylize(dirname)
+    continue_with = most_recent_stylize(dirname) + 1
         
-    # Begin optical flow calculation, if necessary.
-    if not last_optflow == num_frames:
-        optical_flow_computation(args.target, args.resolution, args.downsamp_factor, last_optflow, dirname)
-
+    # Begin optical flow calculation.
+    optflow(args.resolution, args.downsamp_factor, num_frames, dirname)
+    
     # The following are all arguments to be fed into the Torch script.
     input_pattern = str('..' / dirname / FRAME_NAME)
     flow_pattern = str('..' / dirname / ('flow_' + args.resolution) / 'backward_[%d]_{%d}.flo')
