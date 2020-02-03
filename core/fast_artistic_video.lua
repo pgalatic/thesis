@@ -114,8 +114,8 @@ end
 function func_load_cert(opt, i, dtype) 
   local flowFileName = getFormatedFlowFileName(opt.flow_pattern, i - 1, i)
   local certFileName = getFormatedFlowFileName(opt.occlusions_pattern, i - 1, i)
-  utils.wait_for_file(certFileName)
-  local cert = image.load(certFileName, 1):type(dtype)
+  local cert = utils.wait_for_file(certFileName, dtype)
+  
   if opt.invert_occlusion then
     cert:add(-1):mul(-1)
   end

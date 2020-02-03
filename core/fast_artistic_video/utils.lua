@@ -1,5 +1,7 @@
 require 'torch'
 require 'nn'
+require 'image'
+
 local cjson = require 'cjson'
 
 
@@ -70,13 +72,22 @@ function M.file_exists(name)
    if f~=nil then io.close(f) return true else return false end
 end
 
+function M.file_is_valid(name)
+   local valid, cert = pcall(image.load, name, 1)
+   return valid
+end
 
-function M.wait_for_file(filePath)
-  if not M.file_exists(filePath) then
-    print('Waiting for file \"' .. filePath .. '\"')
-    while not M.file_exists(filePath) do os.execute("sleep 1") end
+function M.wait_for_file(filePath, dtype)
+  local print_once = true
+  while not (M.file_exists(filePath) and M.file_is_valid(filePath)) do
+    if printOnce then
+      print('Waiting for file \"' .. filePath .. '\"')
+      print_once = false
+    end
     os.execute("sleep 1")
   end
+  
+  return image.load(filePath, 1):type(dtype)
 end
 
 function M.clear_gradients(m)

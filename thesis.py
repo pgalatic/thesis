@@ -84,7 +84,7 @@ def split_frames(processor, content, resolution, dirname):
 
 def most_recent_stylize(dirname):
     # Count the number of output files and return.
-    return len(glob.glob1(dirname, '*.png'))
+    return len(glob.glob1(dirname, '*.png')) + 1
 
 def main():
     '''Driver program'''
@@ -105,10 +105,12 @@ def main():
     num_frames = split_frames(args.processor, args.content, args.resolution, dirname)
         
     # Find the most recent stylization and optical flow calculation.
-    continue_with = most_recent_stylize(dirname) + 1
+    continue_with = most_recent_stylize(dirname)
         
-    # Begin optical flow calculation.
-    optflow.optflow(args.resolution, args.downsamp_factor, num_frames, dirname, local)
+    # Spawn a thread for optical flow calculation.
+    optflow_thread = threading.Thread(target=optflow.optflow,
+        args=(args.resolution, args.downsamp_factor, num_frames, dirname, local))
+    optflow_thread.start()
     
     # The following are all arguments to be fed into the Torch script.
     input_pattern = str('..' / dirname / FRAME_NAME)
@@ -118,8 +120,12 @@ def main():
     backend = args.gpu_lib if int(args.gpu_num) > -1 else 'nn'
     use_cudnn = '1' if args.gpu_lib == 'cudnn' and int(args.gpu_num) > -1 else '0'
     
+    # FIXME: Right now, the Torch stylization procedure crashes when it tries to use an incomplete file.
+    # As a result, we have to join the thread in order to continue.
+    optflow_thread.join()
+    
     # Run stylization.
-    subprocess.Popen([
+    proc = subprocess.Popen([
         'th', 'fast_artistic_video.lua',
         '-continue_with', str(continue_with),
         '-input_pattern', input_pattern,
@@ -131,6 +137,7 @@ def main():
         '-model_vid', '../' + args.style,
         '-model_img', 'self'
     ], cwd=pathlib.Path(os.getcwd()) / 'core')
+    print(' '.join(proc.args))
 
 if __name__ == '__main__':
     main()
