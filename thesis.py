@@ -72,19 +72,22 @@ def check_deps(processor):
 
 def split_frames(processor, content, resolution, dirname):    
     # Don't split the video if we've already done so.
-    if not os.path.isfile(dirname / 'frame_00001.ppm'):
+    if not os.path.isfile(str(dirname / 'frame_00001.ppm')):
         if not resolution == RESOLUTION_DEFAULT:
-            subprocess.Popen([processor, '-i', content, '-vf', 'scale=' + resolution, 
+            proc = subprocess.Popen([processor, '-i', content, '-vf', 'scale=' + resolution, 
                 str(dirname / FRAME_NAME)])
         else:
-            subprocess.Popen([processor, '-i', content, str(dirname / FRAME_NAME)])
+            proc = subprocess.Popen([processor, '-i', content, str(dirname / FRAME_NAME)])
+    
+        # Wait until splitting the frames is finished, so we know how many there are.
+        proc.wait()
     
     # Return the number of frames.
-    return len(glob.glob1(dirname, '*.ppm'))
+    return len(glob.glob1(str(dirname), '*.ppm'))
 
 def most_recent_stylize(dirname):
     # Count the number of output files and return.
-    return len(glob.glob1(dirname, '*.png')) + 1
+    return len(glob.glob1(str(dirname), '*.png')) + 1
 
 def main():
     '''Driver program'''
@@ -92,11 +95,11 @@ def main():
     
     # Make output folder(s), if necessary
     dirname = pathlib.Path(args.nfs) / os.path.basename(os.path.splitext(args.content)[0])
-    if not os.path.exists(dirname):
-        os.mkdir(dirname)
+    if not os.path.exists(str(dirname)):
+        os.mkdir(str(dirname))
     local = pathlib.Path(args.local) / os.path.basename(os.path.splitext(args.content)[0])
-    if not os.path.exists(local):
-        os.mkdir(local)
+    if not os.path.exists(str(local)):
+        os.mkdir(str(local))
         
     # Preliminary operations to make sure that the environment is set up properly.
     check_deps(args.processor)
@@ -136,7 +139,7 @@ def main():
         '-gpu', args.gpu_num,
         '-model_vid', '../' + args.style,
         '-model_img', 'self'
-    ], cwd=pathlib.Path(os.getcwd()) / 'core')
+    ], cwd=str(pathlib.Path(os.getcwd()) / 'core'))
     print(' '.join(proc.args))
 
 if __name__ == '__main__':
