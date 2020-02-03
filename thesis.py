@@ -96,11 +96,11 @@ def main():
     # Make output folder(s), if necessary
     dirname = pathlib.Path(args.nfs) / os.path.basename(os.path.splitext(args.content)[0])
     if not os.path.exists(str(dirname)):
-        os.makedirs(str(dirname), PERMISSIONS)
+        os.makedirs(str(dirname))
     local = pathlib.Path(args.local) / os.path.basename(os.path.splitext(args.content)[0])
     if not os.path.exists(str(local)):
-        os.makedirs(str(local), PERMISSIONS)
-        
+        os.makedirs(str(local))
+    
     # Preliminary operations to make sure that the environment is set up properly.
     check_deps(args.processor)
     

@@ -15,6 +15,3 @@ RESOLUTION_DEFAULT = 'default'
 
 # The maximum number of Optflow jobs to run simultaneously.
 MAX_OPTFLOW_JOBS = 2
-
-# The permissions level at which to create new folders.
-PERMISSIONS = 0777
