@@ -1,9 +1,5 @@
-*.lua
 *.pdf
-fast-artistic-videos/*/
-RGMP/*/
-figures/
-*static
+videos/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

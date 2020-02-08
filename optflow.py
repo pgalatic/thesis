@@ -27,7 +27,7 @@ def most_recent_optflo(flow, resolution):
     # The most recent frame half the number of placeholder files plus one.
     return len(glob.glob1(str(flow), '*.plc')) + 1
 
-def claim_job(dirname, flow, local, resolution, num_frames):
+def claim_job(remote, flow, local, resolution, num_frames):
     # Check the most recent available job.
     next_job = most_recent_optflo(flow, resolution)
     
@@ -45,15 +45,6 @@ def claim_job(dirname, flow, local, resolution, num_frames):
             with open(placeholder, 'x') as handle:
                 handle.write('PLACEHOLDER CREATED BY {name}'.format(name=platform.node()))
             
-            # Download the files required for the job, if necessary.
-            start_local = str(local / (FRAME_NAME % next_job))
-            start_remote = str(dirname / (FRAME_NAME % next_job))
-            end_local = str(local / (FRAME_NAME % (next_job + 1)))
-            end_remote = str(dirname / (FRAME_NAME % (next_job + 1)))
-            
-            if not os.path.exists(start_local): shutil.copy(start_remote, start_local)
-            if not os.path.exists(end_local):   shutil.copy(end_remote, end_local)
-            
             print('Job claimed: {job}'.format(job=next_job))
             return next_job
         except FileExistsError:
@@ -63,18 +54,12 @@ def claim_job(dirname, flow, local, resolution, num_frames):
     # There are no more jobs.
     return None
 
-def complete_job(fnames, dst):
-    for fname in fnames:
-        shutil.copyfile(fname, str(dst / os.path.basename(fname)))
-
-def run_job(job, dirname, flow, local, downsamp_factor, put_thread):
+def run_job(job, flow, local, downsamp_factor, put_thread):
     if job == None or job < 0:
         raise Exception('Bad job passed to run_job: {job}'.format(job=job))
     
     start_local = str(local / (FRAME_NAME % job))
-    start_remote = str(dirname / (FRAME_NAME % job))
     end_local = str(local / (FRAME_NAME % (job + 1)))
-    end_remote = str(dirname / (FRAME_NAME % (job + 1)))
     forward_name = str(local / 'forward_{i}_{j}.flo'.format(i=job, j=job+1))
     backward_name = str(local / 'backward_{j}_{i}.flo'.format(i=job, j=job+1))
     reliable_forward = str(local / 'reliable_{i}_{j}.pgm'.format(i=job, j=job+1))
@@ -114,19 +99,19 @@ def run_job(job, dirname, flow, local, downsamp_factor, put_thread):
     
     # Spawn a thread to put the produced files in the remote directory.
     fnames = [forward_name, backward_name, reliable_forward, reliable_backward]
-    production = threading.Thread(target=complete_job, args=(fnames, flow))
-    put_thread.append(production)
-    production.start()
+    complete = threading.Thread(target=common.upload_files, args=(fnames, flow, local))
+    put_thread.append(complete)
+    complete.start()
 
-def optflow(resolution, downsamp_factor, num_frames, dirname, local): 
+def optflow(resolution, downsamp_factor, num_frames, remote, local): 
     print('Starting optical flow calculations...')
     
-    flow = dirname / ('flow_' + resolution + '/')
+    flow = remote / ('flow_' + resolution + '/')
     if not os.path.isdir(str(flow)):
         os.makedirs(str(flow))
         
     # Get a job! We need our first job before we can start threading.
-    job = claim_job(dirname, flow, local, resolution, num_frames)
+    job = claim_job(remote, flow, local, resolution, num_frames)
     running = []
     completing = []
     while job is not None:
@@ -136,9 +121,9 @@ def optflow(resolution, downsamp_factor, num_frames, dirname, local):
             time.sleep(1)
         # Spawn a thread to complete that job, then get the next one.
         running.append(threading.Thread(target=run_job, 
-            args=(job, dirname, flow, local, downsamp_factor, completing)))
+            args=(job, flow, local, downsamp_factor, completing)))
         running[-1].start()
-        job = claim_job(dirname, flow, local, resolution, num_frames)
+        job = claim_job(remote, flow, local, resolution, num_frames)
         
     # Uncomment these two lines to discard placeholders when optical flow calculations are finished.
     # files = glob.glob1(flow, '*.plc')

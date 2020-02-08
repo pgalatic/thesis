@@ -7,33 +7,24 @@
 # STD LIB
 import os
 import pdb
-import sys
-import glob
-import time
-import errno
-import shutil
 import pathlib
 import argparse
-import platform
 import threading
-import subprocess
-import numpy as np
 
 # EXTERNAL LIB
+import numpy as np
 
 # LOCAL LIB
 import optflow
+import stylize
 from const import *
-
-# CONSTANTS
-TIME_FORMAT = '%H:%M:%S'
 
 def parse_args():
     '''Parses arguments'''
     ap = argparse.ArgumentParser()
     
     # Required arguments
-    ap.add_argument('content', type=str,
+    ap.add_argument('video', type=str,
         help='The path to the video to stylize.')
     ap.add_argument('style', type=str,
         help='The path to the model used for stylization')
@@ -56,91 +47,39 @@ def parse_args():
     
     return ap.parse_args()
 
-def check_deps(processor):
-    check = shutil.which(processor)
-    if not check:
-        print('Video processor {p} not installed. Aborting'.format(p=processor))
-        sys.exit(1)
-    
-    if not (os.path.exists('core/deepmatching-static') and os.path.exists('core/deepflow2-static')):
-        print('Deepmatching/Deepflow static binaries are missing. Aborting')
-        sys.exit(1)
-    else:
-        # Ensure that Deepmatching/Deepflow can be executed.
-        subprocess.Popen(['chmod', '+x', 'core/deepmatching-static'])
-        subprocess.Popen(['chmod', '+x', 'core/deepflow2-static'])
-
-def split_frames(processor, content, resolution, dirname):    
-    # Don't split the video if we've already done so.
-    if not os.path.isfile(str(dirname / 'frame_00001.ppm')):
-        if not resolution == RESOLUTION_DEFAULT:
-            proc = subprocess.Popen([processor, '-i', content, '-vf', 'scale=' + resolution, 
-                str(dirname / FRAME_NAME)])
-        else:
-            proc = subprocess.Popen([processor, '-i', content, str(dirname / FRAME_NAME)])
-    
-        # Wait until splitting the frames is finished, so we know how many there are.
-        proc.wait()
-    
-    # Return the number of frames.
-    return len(glob.glob1(str(dirname), '*.ppm'))
-
-def most_recent_stylize(dirname):
-    # Count the number of output files and return.
-    return len(glob.glob1(str(dirname), '*.png')) + 1
-
 def main():
     '''Driver program'''
     args = parse_args()
     
     # Make output folder(s), if necessary
-    dirname = pathlib.Path(args.nfs) / os.path.basename(os.path.splitext(args.content)[0])
-    if not os.path.exists(str(dirname)):
-        os.makedirs(str(dirname))
-    local = pathlib.Path(args.local) / os.path.basename(os.path.splitext(args.content)[0])
+    remote = pathlib.Path(args.nfs) / os.path.basename(os.path.splitext(args.video)[0])
+    if not os.path.exists(str(remote)):
+        os.makedirs(str(remote))
+    local = pathlib.Path(args.local) / os.path.basename(os.path.splitext(args.video)[0])
     if not os.path.exists(str(local)):
         os.makedirs(str(local))
     
-    # Preliminary operations to make sure that the environment is set up properly.
-    check_deps(args.processor)
-    
     # Split video into individual frames
-    num_frames = split_frames(args.processor, args.content, args.resolution, dirname)
-        
-    # Find the most recent stylization and optical flow calculation.
-    continue_with = most_recent_stylize(dirname)
+    num_frames = video.split_frames(args.processor, args.video, args.resolution, remote)
+    
+    pdb.set_trace() # Did video.split_frames() work?
         
     # Spawn a thread for optical flow calculation.
     optflow_thread = threading.Thread(target=optflow.optflow,
-        args=(args.resolution, args.downsamp_factor, num_frames, dirname, local))
+        args=(args.resolution, args.downsamp_factor, num_frames, remote, local))
     optflow_thread.start()
-    
-    # The following are all arguments to be fed into the Torch script.
-    input_pattern = str('..' / dirname / FRAME_NAME)
-    flow_pattern = str('..' / dirname / ('flow_' + args.resolution) / 'backward_[%d]_{%d}.flo')
-    occlusions_pattern = str('..' / dirname / ('flow_' + args.resolution) / 'reliable_[%d]_{%d}.pgm')
-    output_prefix = str('..' / dirname / 'out')
-    backend = args.gpu_lib if int(args.gpu_num) > -1 else 'nn'
-    use_cudnn = '1' if args.gpu_lib == 'cudnn' and int(args.gpu_num) > -1 else '0'
-    
     # FIXME: Right now, the Torch stylization procedure crashes when it tries to use an incomplete file.
     # As a result, we have to join the thread in order to continue.
     optflow_thread.join()
     
-    # Run stylization.
-    proc = subprocess.Popen([
-        'th', 'fast_artistic_video.lua',
-        '-continue_with', str(continue_with),
-        '-input_pattern', input_pattern,
-        '-flow_pattern', flow_pattern,
-        '-occlusions_pattern', occlusions_pattern,
-        '-output_prefix', output_prefix,
-        '-use_cudnn', use_cudnn,
-        '-gpu', args.gpu_num,
-        '-model_vid', '../' + args.style,
-        '-model_img', 'self'
-    ], cwd=str(pathlib.Path(os.getcwd()) / 'core'))
-    print(' '.join(proc.args))
+    pdb.set_trace() # Did optflow.optflow() work?
+    
+    # Compute neural style transfer.
+    stylize.stylize(args.resolution, remote, local)
+    
+    pdb.set_trace() # Did stylize.stylize() work?
+    
+    video.combine_frames(args.processor)
 
 if __name__ == '__main__':
     main()
