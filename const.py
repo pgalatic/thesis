@@ -15,9 +15,10 @@ RESOLUTION_DEFAULT = 'default'
 KNEE_THRESHOLD = 0.05
 
 # The maximum number of threading jobs to run simultaneously.
-MAX_STYLIZE_JOBS = 2
-MAX_OPTFLOW_JOBS = 3
-MAX_UPLOAD_JOBS = 8
+MAX_STYLIZE_JOBS = 1
+MAX_OPTFLOW_JOBS = 1
+MAX_UPLOAD_JOBS = 1
 
 # These are names of functions that only one computer should complete while the others wait.
+UPLOAD_VIDEO_TAG = 'upload_video.plc'
 DIVIDE_TAG = 'divide.pkl'

@@ -7,6 +7,7 @@
 # STD LIB
 import os
 import pdb
+import shutil
 import pathlib
 import argparse
 import threading
@@ -15,6 +16,8 @@ import threading
 import numpy as np
 
 # LOCAL LIB
+import common
+import video
 import optflow
 import stylize
 from const import *
@@ -25,14 +28,16 @@ def parse_args():
     
     # Required arguments
     ap.add_argument('video', type=str,
-        help='The path to the video to stylize.')
+        help='The remote path to the stylization target.')
     ap.add_argument('style', type=str,
         help='The path to the model used for stylization')
     ap.add_argument('nfs', type=str,
         help='The directory of the mounted NFS file server where images are to be shared.')
         
     # Optional arguments
-    ap.add_argument('local', type=str, nargs='?', default='.',
+    ap.add_argument('--local_video', type=str, nargs='?', default=None,
+        help='The local path to the stylization target. At least one node must carry the target video so that it can be distributed [None].')
+    ap.add_argument('--local', type=str, nargs='?', default='.',
         help='The local directory where files will temporarily be stored during processing, to cut down on communication costs over NFS. [.]')
     ap.add_argument('--processor', type=str, nargs='?', default='ffmpeg',
         help='The video processer to use, either ffmpeg (preferred) or avconv (experimental) [ffmpeg]')
@@ -58,12 +63,21 @@ def main():
     local = pathlib.Path(args.local) / os.path.basename(os.path.splitext(args.video)[0])
     if not os.path.exists(str(local)):
         os.makedirs(str(local))
+    reel = local / os.path.basename(args.video)
+    
+    # Upload the video to the remote system, if it was specified, otherwise wait for the video to be uploaded.
+    if args.local_video:
+        # Only upload if strictly necessary.
+        if not os.path.exists(args.video):
+            common.upload_files([args.local_video], args.video, absolute_path=True)
+        shutil.copyfile(args.local_video, str(reel))
+    else:
+        common.wait_for(args.video)
+        shutil.copyfile(args.video, str(reel))
     
     # Split video into individual frames
-    num_frames = video.split_frames(args.processor, args.video, args.resolution, remote)
-    
-    pdb.set_trace() # Did video.split_frames() work?
-        
+    num_frames = video.split_frames(args.processor, args.resolution, reel, local)
+            
     # Spawn a thread for optical flow calculation.
     optflow_thread = threading.Thread(target=optflow.optflow,
         args=(args.resolution, args.downsamp_factor, num_frames, remote, local))

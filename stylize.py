@@ -12,6 +12,7 @@ import numpy as np
 from PIL import Image
 
 # LOCAL LIB
+import common
 from const import *
 
 def kl_divergence(p, q):
@@ -103,12 +104,12 @@ def run_job(start, end, resolution, remote, local):
     # print(' '.join(proc.args))
     
     # Upload the product of stylization to the remote directory.
-    fnames = glob.glob1(str(local), '*.png')
-    threading.Thread(target=common.upload_files, args=(fnames, remote, local)).start()
+    fnames = [str(local / fname) for fname in glob.glob1(str(local), '*.png')]
+    threading.Thread(target=common.upload_files, args=(fnames, remote)).start()
 
 def stylize(resolution, remote, local):
     # Find keyframes and use those as delimiters.
-    frames = [local / frame for frame in glob.glob1(str(local), '*.ppm'))
+    frames = [str(local / frame) for frame in glob.glob1(str(local), '*.ppm')]
     common.wait_complete(DIVIDE_TAG, divide, frames, remote)
     partitions = common.read_tag(DIVIDE_TAG, remote)
     

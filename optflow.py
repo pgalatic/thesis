@@ -16,6 +16,7 @@ import subprocess
 # EXTERNAL LIB
 
 # LOCAL LIB
+import common
 from const import *
 
 def most_recent_optflo(flow, resolution):
@@ -66,7 +67,7 @@ def run_job(job, flow, local, downsamp_factor, put_thread):
     reliable_backward = str(local / 'reliable_{j}_{i}.pgm'.format(i=job, j=job+1))
         
     # Compute forward optical flow.
-    print('Computing forward optical flow for job {job}.'.format(job=job))
+    print('\nComputing forward optical flow for job {job}.'.format(job=job))
     forward_dm = subprocess.Popen([
         './core/deepmatching-static', start_local, end_local, '-nt', '0', '-downscale', downsamp_factor
     ], stdout=subprocess.PIPE)
@@ -99,7 +100,7 @@ def run_job(job, flow, local, downsamp_factor, put_thread):
     
     # Spawn a thread to put the produced files in the remote directory.
     fnames = [forward_name, backward_name, reliable_forward, reliable_backward]
-    complete = threading.Thread(target=common.upload_files, args=(fnames, flow, local))
+    complete = threading.Thread(target=common.upload_files, args=(fnames, flow))
     put_thread.append(complete)
     complete.start()
 
@@ -124,7 +125,7 @@ def optflow(resolution, downsamp_factor, num_frames, remote, local):
             args=(job, flow, local, downsamp_factor, completing)))
         running[-1].start()
         job = claim_job(remote, flow, local, resolution, num_frames)
-        
+            
     # Uncomment these two lines to discard placeholders when optical flow calculations are finished.
     # files = glob.glob1(flow, '*.plc')
     # for fname in files: os.remove(flow / fname)

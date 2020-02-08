@@ -31,17 +31,17 @@ def check_deps(processor):
         subprocess.Popen(['chmod', '+x', 'core/deepmatching-static'])
         subprocess.Popen(['chmod', '+x', 'core/deepflow2-static'])
 
-def split_frames(processor, video, resolution, remote, local):
+def split_frames(processor, resolution, reel, local):
     # Preliminary operations to make sure that the environment is set up properly.
-    check_deps(args.processor)
+    check_deps(processor)
 
     # Split video into a collection of frames. It's necessary to have a local copy of the frames.
     # Don't split the video if we've already done so.
     if not os.path.isfile(str(local / 'frame_00001.ppm')):
         if resolution == RESOLUTION_DEFAULT:
-            proc = subprocess.Popen([processor, '-i', video, str(local / FRAME_NAME)])
+            proc = subprocess.Popen([processor, '-i', str(reel), str(local / FRAME_NAME)])
         else:
-            proc = subprocess.Popen([processor, '-i', video, '-vf', 'scale=' + resolution, 
+            proc = subprocess.Popen([processor, '-i', str(reel), '-vf', 'scale=' + resolution, 
                 str(local / FRAME_NAME)])
     
         # Wait until splitting the frames is finished, so we know how many there are.
