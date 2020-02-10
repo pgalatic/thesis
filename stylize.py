@@ -3,8 +3,14 @@
 # Organizes and executes divide-and-conquer style transfer.
 
 # STD LIB
+import os
 import pdb
 import glob
+import time
+import shutil
+import pathlib
+import platform
+import threading
 import subprocess
 
 # EXTERNAL LIB
@@ -18,14 +24,13 @@ from const import *
 def kl_divergence(p, q):
     # As implemented in "KL Divergence Python Example" by Cory Malkin (2019).
     # https://towardsdatascience.com/kl-divergence-python-example-b87069e4b810
-    return np.sum(np.where(p != 0, p * np.log(p / q), 0))
+    return np.sum(np.where(p != 0, p * np.log(p / (q + EPSILON)), 0))
 
 def kl_dist(frame1, frame2):
     # Uses Kullback-Liebler divergence as in Courbon et al. (2010).
     # http://www.sciencedirect.com/science/article/pii/S0967066110000808
-    
-    array1 = np.asarray(Image.open(frame1))
-    array2 = np.asarray(Image.open(frame2))
+    array1 = np.asarray(Image.open(frame1)).astype(np.float64) / 255.
+    array2 = np.asarray(Image.open(frame2)).astype(np.float64) / 255.
     
     hist1 = array1.mean(axis=2).flatten()
     hist2 = array2.mean(axis=2).flatten()
@@ -43,10 +48,9 @@ def get_dists(frames, dist_func):
 
 def divide(frames):
     dists = get_dists(frames, kl_dist) # Change the second parameter to change the distance metric.
-    pdb.set_trace() # Check to see if the keyframes in the dists are legitimate.
     # Loop until the "knee point" where keyframe candidates become more similar is reached.
-    total_divergence = 0
-    partitions = []
+    total_divergence = EPSILON
+    keyframes = []
     for dist in dists:
         if dist[-1] / total_divergence < KNEE_THRESHOLD:
             break
@@ -54,17 +58,19 @@ def divide(frames):
         keyframes.append(dist[2])
     # Use the keyframes to compute partitions, then return the partitions.
     keyframes = sorted(keyframes)
-    # Partitions are a tuple of (start, end, [frames]).
-    partitions = [(idx, idy, frames[idx:idy]) for idx, idy in zip([0] + keyframes, keyframes + [None])]
-    pdb.set_trace() # DEBUG Verify that these partitions are legitimate.
+    # Partitions are a list of lists of frame filenames.
+    partitions = [frames[idx:idy] for idx, idy in zip([0] + keyframes, keyframes + [None])]
     return partitions
 
-def claim_job(start_at, partitions):
+def claim_job(remote, start_at, partitions):
     for idx, partition in enumerate(partitions[start_at:]):
-        placeholder = 'partition_{}.plc'.format(idx)
+        placeholder = str(remote / 'partition_{}.plc'.format(idx))
         try:
             with open(placeholder, 'x') as handle:
                 handle.write('PLACEHOLDER CREATED BY {name}'.format(name=platform.node()))
+            
+            print('Partition claimed: {}:{}'.format(
+                os.path.basename(partition[0]), os.path.basename(partition[-1])))
             
             return idx, partition
             
@@ -75,14 +81,14 @@ def claim_job(start_at, partitions):
     # There are no more jobs.
     return None, None
 
-def run_job(frames, resolution, remote, local):
+def run_job(idx, frames, style, resolution, remote, local):
     # Copy the relevant files into a local directory.
     # This is not efficient, but it makes working with the Torch script easier.
-    processing = '..' / local / 'processing'
+    processing = local / 'processing_{}'.format(idx)
     if not os.path.isdir(processing):
         os.makedirs(processing)
     for frame in frames:
-        shutil.copyfile(frame, processing)
+        shutil.copyfile(frame, str(processing / os.path.basename(frame)))
 
     # The following are all arguments to be fed into the Torch script.
     
@@ -96,11 +102,12 @@ def run_job(frames, resolution, remote, local):
     occlusions_pattern = str('..' / remote / ('flow_' + resolution) / 'reliable_[%d]_{%d}.pgm')
     
     # The pattern denoting where and by what name the output PNG images should be deposited.
-    output_prefix = str('..' / local / 'out')
+    output_prefix = str('..' / processing / 'out')
     
     # We are using the default, slow backend for now.
     backend = 'nn'
     use_cudnn = '0'
+    gpu_num = '-1'
     # TODO: GPU/CUDA support
     # backend = args.gpu_lib if int(args.gpu_num) > -1 else 'nn'
     # use_cudnn = '1' if args.gpu_lib == 'cudnn' and int(args.gpu_num) > -1 else '0'
@@ -120,26 +127,35 @@ def run_job(frames, resolution, remote, local):
     # print(' '.join(proc.args))
     
     # Upload the product of stylization to the remote directory.
-    fnames = [str(local / fname) for fname in glob.glob1(str(local), '*.png')]
+    fnames = [str(processing / fname) for fname in glob.glob1(str(processing), '*.png')]
     threading.Thread(target=common.upload_files, args=(fnames, remote)).start()
 
-def stylize(resolution, remote, local):
+def stylize(style, resolution, remote, local):
     # Find keyframes and use those as delimiters.
     frames = [str(local / frame) for frame in glob.glob1(str(local), '*.ppm')]
-    common.wait_complete(DIVIDE_TAG, divide, [frames], remote)
-    partitions = common.read_tag(DIVIDE_TAG, remote)
+    partitions = common.wait_complete(DIVIDE_TAG, divide, [frames], remote)
     
     running = []
-    last_idx, job = claim_job(0, partitions)
+    last_idx, partition = claim_job(remote, 0, partitions)
     
-    while job is not None:
+    while partition is not None:
+        # Spawn a thread to complete that partition, then get the next one.
+        running.append(threading.Thread(target=run_job, 
+            args=(last_idx, partition, style, resolution, remote, local)))
+        running[-1].start()
+        
         # If there isn't room in the jobs list, wait for a thread to finish.
-        while len(running) > MAX_STYLIZE_JOBS:
+        while len(running) >= MAX_STYLIZE_JOBS:
             running = [thread for thread in running if thread.isAlive()]
             time.sleep(1)
-        # Spawn a thread to complete that job, then get the next one.
-        running.append(threading.Thread(target=run_job, 
-            args=(job[2], resolution, remote, local)))
-        running[-1].start()
-        last_idx, job = claim_job(last_idx, partitions)
+        
+        last_idx, partition = claim_job(remote, last_idx, partitions)
+    
+    # Join all remaining threads.
+    for thread in running:
+        thread.join()
+    
+    # Remove the partitioning file if it still exists (is this necessary?).
+    # if os.path.exists(DIVIDE_TAG):
+    #     os.remove(DIVIDE_TAG)
         

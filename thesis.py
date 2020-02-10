@@ -7,6 +7,7 @@
 # STD LIB
 import os
 import pdb
+import sys
 import shutil
 import pathlib
 import argparse
@@ -87,9 +88,9 @@ def main():
     optflow_thread.join()
         
     # Compute neural style transfer.
-    stylize.stylize(args.resolution, remote, local)
+    stylize.stylize(args.style, args.resolution, remote, local)
     
-    pdb.set_trace() # Did stylize.stylize() work?
+    sys.exit(1)
     
     video.combine_frames(args.processor)
 

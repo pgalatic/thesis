@@ -11,6 +11,9 @@ FRAME_NAME = 'frame_%05d.ppm'
 # same resolution as their original resolution.
 RESOLUTION_DEFAULT = 'default'
 
+# A small constant useful to avoid dividing by zero.
+EPSILON = 0.01
+
 # The threshold at which to stop accepting new keyframes.
 KNEE_THRESHOLD = 0.05
 
