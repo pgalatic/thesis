@@ -27,7 +27,7 @@ In my preliminary experiments, I used two Windows machines (with Windows Subsyst
 
 1. Log in to all the requisite computers. Designate one computer as Master and create a folder that will be mounted by the other computers.
 1. Go to a non-Master machine and mount the Master drive. I recommend using a public/private RSA key for this, shared between all computers.
-1. If you're using WSL, you cannot directly access a remote directory mounted to a letter drive (so far as I know). A way around this creating a symbolic link. Here is the command I use in WSL to link the `O:` drive to a folder I created, `/mnt/o`.
+1. If you're using WSL, you cannot directly access a remote directory mounted to a letter drive (so far as I know). A way around this creating a symbolic link. Here is the command I use in WSL to link the `O:` drive to a folder I created, `/mnt/o`. If it fails, first double-check that your link is active and that you can transfer files manually between your local computer and the remote system.
 ```
 sudo mount -t drvfs 'O:' /mnt/o
 ```
@@ -38,7 +38,7 @@ TODO
 
 ## Known Issues / Future Work
 
-TODO
+* Because of an interaction between Python's subprocess and the optical flow calculations, a benign message `error: unexpected parameter '|'` is often printed.
 
 ## References
 

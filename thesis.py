@@ -58,10 +58,10 @@ def main():
     
     # Make output folder(s), if necessary
     remote = pathlib.Path(args.nfs) / os.path.basename(os.path.splitext(args.video)[0])
-    if not os.path.exists(str(remote)):
+    if not os.path.isdir(str(remote)):
         os.makedirs(str(remote))
     local = pathlib.Path(args.local) / os.path.basename(os.path.splitext(args.video)[0])
-    if not os.path.exists(str(local)):
+    if not os.path.isdir(str(local)):
         os.makedirs(str(local))
     reel = local / os.path.basename(args.video)
     

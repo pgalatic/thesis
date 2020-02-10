@@ -75,12 +75,30 @@ def claim_job(start_at, partitions):
     # There are no more jobs.
     return None, None
 
-def run_job(start, end, resolution, remote, local):
+def run_job(frames, resolution, remote, local):
+    # Copy the relevant files into a local directory.
+    # This is not efficient, but it makes working with the Torch script easier.
+    processing = '..' / local / 'processing'
+    if not os.path.isdir(processing):
+        os.makedirs(processing)
+    for frame in frames:
+        shutil.copyfile(frame, processing)
+
     # The following are all arguments to be fed into the Torch script.
-    input_pattern = str('..' / local / FRAME_NAME)
+    
+    # The pattern denoting the content images.
+    input_pattern = str('..' / processing / FRAME_NAME)
+    
+    # The pattern denoting the optical flow images.
     flow_pattern = str('..' / remote / ('flow_' + resolution) / 'backward_[%d]_{%d}.flo')
+    
+    # The pattern denoting the consistency images (for handling potential occlusion).
     occlusions_pattern = str('..' / remote / ('flow_' + resolution) / 'reliable_[%d]_{%d}.pgm')
+    
+    # The pattern denoting where and by what name the output PNG images should be deposited.
     output_prefix = str('..' / local / 'out')
+    
+    # We are using the default, slow backend for now.
     backend = 'nn'
     use_cudnn = '0'
     # TODO: GPU/CUDA support
@@ -90,8 +108,6 @@ def run_job(start, end, resolution, remote, local):
     # Run stylization.
     proc = subprocess.Popen([
         'th', 'fast_artistic_video.lua',
-        '-start_at', str(start),
-        '-end_at', str(end),
         '-input_pattern', input_pattern,
         '-flow_pattern', flow_pattern,
         '-occlusions_pattern', occlusions_pattern,
@@ -114,7 +130,7 @@ def stylize(resolution, remote, local):
     partitions = common.read_tag(DIVIDE_TAG, remote)
     
     running = []
-    last_partition, job = claim_job(0, partitions)
+    last_idx, job = claim_job(0, partitions)
     
     while job is not None:
         # If there isn't room in the jobs list, wait for a thread to finish.
@@ -123,7 +139,7 @@ def stylize(resolution, remote, local):
             time.sleep(1)
         # Spawn a thread to complete that job, then get the next one.
         running.append(threading.Thread(target=run_job, 
-            args=(job[0], job[1], resolution, remote, local)))
+            args=(job[2], resolution, remote, local)))
         running[-1].start()
-        last_partition, job = claim_job(last_partition, partitions)
+        last_idx, job = claim_job(last_idx, partitions)
         
