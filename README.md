@@ -39,6 +39,7 @@ TODO
 ## Known Issues / Future Work
 
 * Because of an interaction between Python's subprocess and the optical flow calculations, a benign message `error: unexpected parameter '|'` is often printed.
+* If the shared filesystem runs out of memory, the program may loop endlessly trying to create the same optical flow or stylization images, because Python's open(fname, 'x') will execute successfully.
 
 ## References
 

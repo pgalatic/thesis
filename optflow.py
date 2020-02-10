@@ -41,7 +41,6 @@ def claim_job(remote, flow, local, resolution, num_frames):
         return None
     
     # Loop while there may yet still be jobs to do.
-    pdb.set_trace()
     while next_job < num_frames:
         
         # Try to create a placeholder.
@@ -129,7 +128,6 @@ def optflow(resolution, downsamp_factor, num_frames, remote, local):
         running.append(threading.Thread(target=run_job, 
             args=(job, flow, local, downsamp_factor, completing)))
         running[-1].start()
-        pdb.set_trace()
         job = claim_job(remote, flow, local, resolution, num_frames)
             
     # Uncomment these two lines to discard placeholders when optical flow calculations are finished.
