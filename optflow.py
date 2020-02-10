@@ -41,7 +41,6 @@ def claim_job(remote, flow, local, resolution, num_frames):
         return None
     
     # Loop while there may yet still be jobs to do.
-    pdb.set_trace()
     while next_job < num_frames:
         
         # Try to create a placeholder.
@@ -51,7 +50,7 @@ def claim_job(remote, flow, local, resolution, num_frames):
             with open(placeholder, 'x') as handle:
                 handle.write('PLACEHOLDER CREATED BY {name}'.format(name=platform.node()))
             
-            print('Job claimed: {job}'.format(job=next_job))
+            print('Job claimed: {}'.format(next_job))
             return next_job
         except FileExistsError:
             # We couldn't claim that job, so try the next one.
@@ -121,15 +120,16 @@ def optflow(resolution, downsamp_factor, num_frames, remote, local):
     running = []
     completing = []
     while job is not None:
-        # If there isn't room in the jobs list, wait for a thread to finish.
-        while len(running) > MAX_OPTFLOW_JOBS:
-            running = [thread for thread in running if thread.isAlive()]
-            time.sleep(1)
         # Spawn a thread to complete that job, then get the next one.
         running.append(threading.Thread(target=run_job, 
             args=(job, flow, local, downsamp_factor, completing)))
         running[-1].start()
-        pdb.set_trace()
+        
+        # If there isn't room in the jobs list, wait for a thread to finish.
+        while len(running) >= MAX_OPTFLOW_JOBS:
+            running = [thread for thread in running if thread.isAlive()]
+            time.sleep(1)
+        
         job = claim_job(remote, flow, local, resolution, num_frames)
             
     # Uncomment these two lines to discard placeholders when optical flow calculations are finished.

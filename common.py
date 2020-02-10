@@ -21,6 +21,8 @@ from const import *
 def wait_complete(tag, target, args, remote):
     # Try to create a placeholder so that two nodes don't try to do the same job at once.
     placeholder = str(remote / (tag + '.plc'))
+    write_to = str(remote / tag)
+    
     try:
         # This will only succeed if this program successfully created the placeholder.
         with open(placeholder, 'x') as handle:
@@ -31,23 +33,23 @@ def wait_complete(tag, target, args, remote):
         result = target(*args)
         
         # Write the output to disk.
-        with open(tag, 'wb') as handle:
+        with open(write_to, 'wb') as handle:
             pickle.dump(result, handle)
+        
+        return result
     except FileExistsError:
         # We couldn't claim that job, so WAIT until it's finished, then return None.
         print('Job {} already claimed; waiting for output...')
         while os.path.exists(placeholder):
             time.sleep(1)
+            write_to = str(remote / tag)
+        
+        with open(write_to, 'rb') as handle:
+            return pickle.load(handle)
     finally:
         # Remove the placeholder in either case.
         if os.path.exists(placeholder):
             os.remove(placeholder)
-
-def read_tag(tag, remote):
-    # Read data from a common tag.
-    fname = str(remote / tag)
-    with open(fname, 'rb') as handle:
-        return pickle.load(handle)
 
 def upload_files(fnames, dst, absolute_path=False):
     # Upload frames from the local directory to the shared directory.
