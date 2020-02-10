@@ -4,6 +4,7 @@
 
 # STD LIB
 import os
+import re
 import sys
 import pdb
 import glob
@@ -25,8 +26,11 @@ def most_recent_optflo(flow, resolution):
         # If it doesn't exist, then there are no optflow files, and we start from scratch.
         return 1
 
-    # The most recent frame half the number of placeholder files plus one.
-    return len(glob.glob1(str(flow), '*.plc')) + 1
+    # The most recent frame is the most recent placeholder plus 1.
+    placeholders = glob.glob1(str(flow), '*.plc')
+    if len(placeholders) == 0: return 1
+    
+    return max(map(int, [re.findall(r'\d+', plc)[0] for plc in placeholders])) + 1
 
 def claim_job(remote, flow, local, resolution, num_frames):
     # Check the most recent available job.
@@ -37,9 +41,10 @@ def claim_job(remote, flow, local, resolution, num_frames):
         return None
     
     # Loop while there may yet still be jobs to do.
+    pdb.set_trace()
     while next_job < num_frames:
         
-        # Try to create a placeholder. If this fails, return False.
+        # Try to create a placeholder.
         placeholder = str(flow / (os.path.splitext(FRAME_NAME)[0] % next_job + '.plc'))
         try:
             # This will only succeed if this program successfully created the placeholder.
@@ -124,6 +129,7 @@ def optflow(resolution, downsamp_factor, num_frames, remote, local):
         running.append(threading.Thread(target=run_job, 
             args=(job, flow, local, downsamp_factor, completing)))
         running[-1].start()
+        pdb.set_trace()
         job = claim_job(remote, flow, local, resolution, num_frames)
             
     # Uncomment these two lines to discard placeholders when optical flow calculations are finished.

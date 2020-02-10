@@ -20,7 +20,7 @@ def kl_divergence(p, q):
     # https://towardsdatascience.com/kl-divergence-python-example-b87069e4b810
     return np.sum(np.where(p != 0, p * np.log(p / q), 0))
 
-def kl_dist(array1, array2):
+def kl_dist(frame1, frame2):
     # Uses Kullback-Liebler divergence as in Courbon et al. (2010).
     # http://www.sciencedirect.com/science/article/pii/S0967066110000808
     
@@ -126,7 +126,7 @@ def run_job(frames, resolution, remote, local):
 def stylize(resolution, remote, local):
     # Find keyframes and use those as delimiters.
     frames = [str(local / frame) for frame in glob.glob1(str(local), '*.ppm')]
-    common.wait_complete(DIVIDE_TAG, divide, frames, remote)
+    common.wait_complete(DIVIDE_TAG, divide, [frames], remote)
     partitions = common.read_tag(DIVIDE_TAG, remote)
     
     running = []

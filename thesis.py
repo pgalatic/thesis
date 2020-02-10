@@ -85,9 +85,7 @@ def main():
     # FIXME: Right now, the Torch stylization procedure crashes when it tries to use an incomplete file.
     # As a result, we have to join the thread in order to continue.
     optflow_thread.join()
-    
-    pdb.set_trace() # Did optflow.optflow() work?
-    
+        
     # Compute neural style transfer.
     stylize.stylize(args.resolution, remote, local)
     
