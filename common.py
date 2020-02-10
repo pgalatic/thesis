@@ -51,7 +51,7 @@ def upload_files(fnames, dst, absolute_path=False):
     running = []
     
     for fname in fnames:
-        print('\nUploading {}...'.format(fname))
+        # print('\nUploading {}...'.format(fname))
         try:
             # This function should handle both PosixPath as well as string destinations.
             if absolute_path:
@@ -78,7 +78,7 @@ def upload_files(fnames, dst, absolute_path=False):
             print('\nFile already exists!')
             pass
 
-def wait_for_file(fname):
+def wait_for(fname):
     # If you wish upon a star...
     while not os.path.exists(fname):
         time.sleep(1)

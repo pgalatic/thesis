@@ -4,10 +4,10 @@
 
 # STD LIB
 import pdb
+import glob
 import subprocess
 
 # EXTERNAL LIB
-import cv2
 import numpy as np
 from PIL import Image
 
