@@ -3,6 +3,7 @@
 # Organizes and executes divide-and-conquer style transfer.
 
 # STD LIB
+import re
 import os
 import pdb
 import glob
@@ -21,11 +22,6 @@ from PIL import Image
 import common
 from const import *
 
-def kl_divergence(p, q):
-    # As implemented in "KL Divergence Python Example" by Cory Malkin (2019).
-    # https://towardsdatascience.com/kl-divergence-python-example-b87069e4b810
-    return np.sum(np.where(p != 0, p * np.log(p / (q + EPSILON)), 0))
-
 def kl_dist(frame1, frame2):
     # Uses Kullback-Liebler divergence as in Courbon et al. (2010).
     # http://www.sciencedirect.com/science/article/pii/S0967066110000808
@@ -35,7 +31,13 @@ def kl_dist(frame1, frame2):
     hist1 = array1.mean(axis=2).flatten()
     hist2 = array2.mean(axis=2).flatten()
     
-    return kl_divergence(hist1, hist2)
+    # Add EPSILON everywhere to avoid dividing by zero.
+    p = (hist1 + EPSILON) / np.sum(hist1)
+    q = (hist2 + EPSILON) / np.sum(hist2)
+    
+    # As implemented in "KL Divergence Python Example" by Cory Malkin (2019).
+    # https://towardsdatascience.com/kl-divergence-python-example-b87069e4b810
+    return np.sum(p * np.log(p / (q)))
 
 def get_dists(frames, dist_func):
     # Iterate over all consecutive pairs and find the distances between them.
@@ -64,6 +66,8 @@ def divide(frames):
 
 def claim_job(remote, start_at, partitions):
     for idx, partition in enumerate(partitions[start_at:]):
+        if len(partition) == 0: continue
+    
         placeholder = str(remote / 'partition_{}.plc'.format(idx))
         try:
             with open(placeholder, 'x') as handle:
@@ -85,10 +89,12 @@ def run_job(idx, frames, style, resolution, remote, local):
     # Copy the relevant files into a local directory.
     # This is not efficient, but it makes working with the Torch script easier.
     processing = local / 'processing_{}'.format(idx)
-    if not os.path.isdir(processing):
-        os.makedirs(processing)
-    for frame in frames:
-        shutil.copyfile(frame, str(processing / os.path.basename(frame)))
+    idys = list(map(int, [re.findall(r'\d+', frame)[0] for frame in frames]))
+    if not os.path.isdir(str(processing)):
+        os.makedirs(str(processing))
+    for idy, frame in enumerate(frames):
+        newname = str(processing / (FRAME_NAME % (idy + 1)))
+        shutil.copyfile(frame, newname)
 
     # The following are all arguments to be fed into the Torch script.
     
@@ -102,7 +108,7 @@ def run_job(idx, frames, style, resolution, remote, local):
     occlusions_pattern = str('..' / remote / ('flow_' + resolution) / 'reliable_[%d]_{%d}.pgm')
     
     # The pattern denoting where and by what name the output PNG images should be deposited.
-    output_prefix = str('..' / processing / 'out')
+    output_prefix = str('..' / processing / OUTPUT_PREFIX)
     
     # We are using the default, slow backend for now.
     backend = 'nn'
@@ -125,10 +131,16 @@ def run_job(idx, frames, style, resolution, remote, local):
         '-model_img', 'self'
     ], cwd=str(pathlib.Path(os.getcwd()) / 'core'))
     # print(' '.join(proc.args))
+    proc.wait()
     
-    # Upload the product of stylization to the remote directory.
-    fnames = [str(processing / fname) for fname in glob.glob1(str(processing), '*.png')]
-    threading.Thread(target=common.upload_files, args=(fnames, remote)).start()
+    status = proc.wait(TIMEOUT)
+    # Upload the product of stylization to the remote directory every TIMEOUT seconds.
+    oldnames = sorted([str(processing / fname) for fname in glob.glob1(str(processing), '*.png')])
+    newnames = [str(processing / (PREFIX_FORMAT % (idy + 1))) for idy in idys]
+    [shutil.move(oldname, newname) for oldname, newname in zip(oldnames, newnames)]
+    
+    print('Uploading {} files...'.format(len(newnames)))
+    threading.Thread(target=common.upload_files, args=(newnames, remote)).start()
 
 def stylize(style, resolution, remote, local):
     # Find keyframes and use those as delimiters.
@@ -139,23 +151,11 @@ def stylize(style, resolution, remote, local):
     last_idx, partition = claim_job(remote, 0, partitions)
     
     while partition is not None:
-        # Spawn a thread to complete that partition, then get the next one.
-        running.append(threading.Thread(target=run_job, 
-            args=(last_idx, partition, style, resolution, remote, local)))
-        running[-1].start()
-        
-        # If there isn't room in the jobs list, wait for a thread to finish.
-        while len(running) >= MAX_STYLIZE_JOBS:
-            running = [thread for thread in running if thread.isAlive()]
-            time.sleep(1)
-        
+        # Style transfer is so computationally intense that threading it doesn't yield much time gain.
+        run_job(last_idx, partition, style, resolution, remote, local)
         last_idx, partition = claim_job(remote, last_idx, partitions)
     
-    # Join all remaining threads.
-    for thread in running:
-        thread.join()
-    
     # Remove the partitioning file if it still exists (is this necessary?).
-    # if os.path.exists(DIVIDE_TAG):
-    #     os.remove(DIVIDE_TAG)
+    if os.path.exists(DIVIDE_TAG):
+        os.remove(DIVIDE_TAG)
         

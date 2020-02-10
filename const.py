@@ -11,17 +11,26 @@ FRAME_NAME = 'frame_%05d.ppm'
 # same resolution as their original resolution.
 RESOLUTION_DEFAULT = 'default'
 
+# 
+OUTPUT_PREFIX = 'out'
+PREFIX_FORMAT = 'out-%05d.png'
+
 # A small constant useful to avoid dividing by zero.
 EPSILON = 0.01
 
-# The threshold at which to stop accepting new keyframes.
-KNEE_THRESHOLD = 0.05
+# The threshold at which to stop accepting new keyframes. Increase this threshold 
+# for fewer keyframes. Decrease it to add more. Set to 0 to force every frame to 
+# be its own partition (untested).
+KNEE_THRESHOLD = 0.0001
 
 # The maximum number of threading jobs to run simultaneously.
-MAX_STYLIZE_JOBS = 1
 MAX_OPTFLOW_JOBS = 1
 MAX_UPLOAD_JOBS = 1
 
-# These are names of functions that only one computer should complete while the others wait.
+# These are names of functions that only one computer should complete while the 
+# others wait.
 UPLOAD_VIDEO_TAG = 'upload_video.plc'
 DIVIDE_TAG = 'divide.pkl'
+
+# 
+TIMEOUT = 60
