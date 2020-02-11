@@ -19,6 +19,20 @@ import threading
 from const import *
 
 def wait_complete(tag, target, args, remote):
+    '''
+    A function used to ensure that only one of N nodes completes a given task.
+    
+    given:
+        tag     -> (str) the name of the file results should be written to and
+                    read from
+        target  -> (func) the function that only one node should execute
+        args    -> (list:Object) the arguments to feed into the target function
+        remote  -> (pathlib.Path) the common directory where results should be 
+                    written to and read from
+    returns:
+        (Object) the product of target given args, either as computed by the 
+            current node or as read from the common directory
+    '''
     # Try to create a placeholder so that two nodes don't try to do the same job at once.
     placeholder = str(remote / (tag + '.plc'))
     write_to = str(remote / tag)
@@ -40,6 +54,7 @@ def wait_complete(tag, target, args, remote):
     except FileExistsError:
         # We couldn't claim that job, so WAIT until it's finished, then return None.
         print('Job {} already claimed; waiting for output...')
+        # Until the placeholder is gone, the file may still be incompletely uploaded.
         while os.path.exists(placeholder):
             time.sleep(1)
             write_to = str(remote / tag)
@@ -52,8 +67,21 @@ def wait_complete(tag, target, args, remote):
             os.remove(placeholder)
 
 def upload_files(fnames, dst, absolute_path=False):
-    # Upload frames from the local directory to the shared directory.
-    # Uses file-objects to help guard against race conditions.
+    '''
+    Upload frames from the local directory to the shared directory.
+    
+    given:
+        fnames  -> (list:str) the names of the files to upload
+        dst     -> (str) either the folder that the files should be deposited 
+                    in (usually the common directory) or the absolute path to
+                    which the files should be copied (the length of fnames must
+                    be 1 in that case)
+    optional:
+        absolute_path   -> (bool) set to True when copying only one file to an 
+                            absolute destination
+    returns:
+        None
+    '''
     running = []
     
     for fname in fnames:
@@ -67,6 +95,7 @@ def upload_files(fnames, dst, absolute_path=False):
         partname = newname + '.part'
         try:
             # This will only succeed if this program successfully created the file.
+            # Uses file-objects to help guard against race conditions.
             with open(partname, 'xb') as handle:
                 with open(str(fname), 'rb') as alt:
                     content = alt.read()
@@ -87,6 +116,9 @@ def upload_files(fnames, dst, absolute_path=False):
             pass
             
 def wait_for(fname):
+    '''
+    WAIT until a file exists.
+    '''
     # If you wish upon a star...
     while not os.path.exists(fname):
         time.sleep(1)

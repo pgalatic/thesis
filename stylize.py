@@ -85,7 +85,7 @@ def claim_job(remote, start_at, partitions):
     # There are no more jobs.
     return None, None
 
-def run_job(idx, frames, style, resolution, remote, local):
+def run_job(idx, frames, resolution, style, remote, local):
     # Copy the relevant files into a local directory.
     # This is not efficient, but it makes working with the Torch script easier.
     processing = local / 'processing_{}'.format(idx)
@@ -142,7 +142,7 @@ def run_job(idx, frames, style, resolution, remote, local):
     print('Uploading {} files...'.format(len(newnames)))
     threading.Thread(target=common.upload_files, args=(newnames, remote)).start()
 
-def stylize(style, resolution, remote, local):
+def stylize(resolution, style, remote, local):
     # Find keyframes and use those as delimiters.
     frames = [str(local / frame) for frame in glob.glob1(str(local), '*.ppm')]
     partitions = common.wait_complete(DIVIDE_TAG, divide, [frames], remote)
@@ -152,7 +152,7 @@ def stylize(style, resolution, remote, local):
     
     while partition is not None:
         # Style transfer is so computationally intense that threading it doesn't yield much time gain.
-        run_job(last_idx, partition, style, resolution, remote, local)
+        run_job(last_idx, partition, resolution, style, remote, local)
         last_idx, partition = claim_job(remote, last_idx, partitions)
     
     # Remove the partitioning file if it still exists (is this necessary?).

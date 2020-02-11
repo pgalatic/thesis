@@ -103,6 +103,10 @@ def run_job(job, flow, local, downsamp_factor, put_thread):
     ])
     
     # Spawn a thread to put the produced files in the remote directory.
+    # TODO: Reduce thread creation overhead by having one background thread operating on a list?
+    # TODO: Look at thread pools.
+    # TODO: Assess time taken in various section of program (threads vs. bash commands?)
+    # TODO: Determine which bash commands can be executed in parallel.
     fnames = [forward_name, backward_name, reliable_forward, reliable_backward]
     complete = threading.Thread(target=common.upload_files, args=(fnames, flow))
     put_thread.append(complete)

@@ -11,7 +11,8 @@ FRAME_NAME = 'frame_%05d.ppm'
 # same resolution as their original resolution.
 RESOLUTION_DEFAULT = 'default'
 
-# 
+# The prefixes used by the core stylization procedure to denote the names of 
+# output images and upload them correctly to the common directory.
 OUTPUT_PREFIX = 'out'
 PREFIX_FORMAT = 'out-%05d.png'
 
@@ -31,6 +32,3 @@ MAX_UPLOAD_JOBS = 1
 # others wait.
 UPLOAD_VIDEO_TAG = 'upload_video.plc'
 DIVIDE_TAG = 'divide.pkl'
-
-# 
-TIMEOUT = 60

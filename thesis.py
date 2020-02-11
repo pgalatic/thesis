@@ -24,47 +24,46 @@ import stylize
 from const import *
 
 def parse_args():
-    '''Parses arguments'''
+    '''Parses arguments.'''
     ap = argparse.ArgumentParser()
     
     # Required arguments
+    ap.add_argument('remote', type=str,
+        help='The directory common to all nodes, e.g. \\mnt\\o\\foo\\.')
     ap.add_argument('video', type=str,
-        help='The remote path to the stylization target.')
+        help='The path to the stylization target as it would appear on the common directory, e.g. \\mnt\\o\\foo\\bar.mp4\\')
     ap.add_argument('style', type=str,
-        help='The path to the model used for stylization')
-    ap.add_argument('nfs', type=str,
-        help='The directory of the mounted NFS file server where images are to be shared.')
+        help='The path to the model used for stylization as it would appear on the common directory, e.g. \\mnt\\o\\foo\\bar.t7\\')
         
     # Optional arguments
-    ap.add_argument('--local_video', type=str, nargs='?', default=None,
-        help='The local path to the stylization target. At least one node must carry the target video so that it can be distributed [None].')
     ap.add_argument('--local', type=str, nargs='?', default='.',
-        help='The local directory where files will temporarily be stored during processing, to cut down on communication costs over NFS. [.]')
+        help='The local directory where files will temporarily be stored during processing, to cut down on communication costs over NFS. By defualt, local files will be stored in a folder at the same level of the repository [.].')
+    ap.add_argument('--local_video', type=str, nargs='?', default=None,
+        help='The local path to the stylization target. If this argument is specified, the video will be copied to the remote directory. If left unspecified and the program finds no video of the given name present at the remote directory, the program will wait for another node to upload the video [None].')
+    ap.add_argument('--local_style', type=str, nargs='?', default=None,
+        help='Same as --local_video, but for the model used for feed-forward stylization [None].')
     ap.add_argument('--processor', type=str, nargs='?', default='ffmpeg',
-        help='The video processer to use, either ffmpeg (preferred) or avconv (experimental) [ffmpeg]')
-    ap.add_argument('--gpu_num', type=str, nargs='?', default='-1',
-        help='The zero-indexed ID of the GPU to use, or -1 to use CPU [-1]')
-    ap.add_argument('--gpu_lib', type=str, nargs='?', default='cudnn',
-        help='The framework to use to run GPU acceleration. This argument is ignored if gpu_num=-1 [cudnn]')
+        help='The video processer to use, either ffmpeg (preferred) or avconv (untested) [ffmpeg].')
     ap.add_argument('--resolution', type=str, nargs='?', default=RESOLUTION_DEFAULT,
-        help='The width to process the video at in the format w:h [Original resolution]')
+        help='The width to process the video at in the format w:h [Original resolution].')
     ap.add_argument('--downsamp_factor', type=str, nargs='?', default='2',
-        help='The downsampling factor for optical flow calculations. Increase this slightly if said calculations are too slow or memory-intense for your machine. [2]')    
+        help='The downsampling factor for optical flow calculations. Increase this slightly if said calculations are too slow or memory-intense for your machine [2].')    
     
     return ap.parse_args()
 
 def main():
-    '''Driver program'''
+    '''Driver program.'''
     args = parse_args()
     
     # Make output folder(s), if necessary
-    remote = pathlib.Path(args.nfs) / os.path.basename(os.path.splitext(args.video)[0])
+    remote = pathlib.Path(args.remote) / os.path.basename(os.path.splitext(args.video)[0])
     if not os.path.isdir(str(remote)):
         os.makedirs(str(remote))
     local = pathlib.Path(args.local) / os.path.basename(os.path.splitext(args.video)[0])
     if not os.path.isdir(str(local)):
         os.makedirs(str(local))
     reel = local / os.path.basename(args.video)
+    model = local / os.path.basename(args.style)
     
     # Upload the video to the remote system, if it was specified, otherwise wait for the video to be uploaded.
     if args.local_video:
@@ -75,6 +74,15 @@ def main():
     else:
         common.wait_for(args.video)
         shutil.copyfile(args.video, str(reel))
+    
+    if args.local_style:
+        # Only upload if strictly necessary.
+        if not os.path.exists(args.style):
+            common.upload_Files([args.local_style], args.style, absolute_path=True)
+        shutil.copyfile(args.local_style, str(model))
+    else:
+        common.wait_for(args.style)
+        shutil.copyfile(args.style, str(model))
     
     # Split video into individual frames
     num_frames = video.split_frames(args.processor, args.resolution, reel, local)
@@ -88,7 +96,7 @@ def main():
     optflow_thread.join()
         
     # Compute neural style transfer.
-    stylize.stylize(args.style, args.resolution, remote, local)
+    stylize.stylize(args.resolution, model, remote, local)
     
     sys.exit(1)
     

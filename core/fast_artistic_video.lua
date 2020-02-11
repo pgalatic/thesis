@@ -45,8 +45,8 @@ cmd:option('-create_inconsistent', false, 'Ignore any prior images, generate fra
 
 -- GPU options
 cmd:option('-gpu', -1)
-cmd:option('-backend', 'cuda')
-cmd:option('-use_cudnn', 1)
+cmd:option('-backend', 'nn')
+cmd:option('-use_cudnn', 0)
 cmd:option('-cudnn_benchmark', 0)
 
 -- Evaluation
