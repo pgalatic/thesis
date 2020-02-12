@@ -22,7 +22,7 @@ EPSILON = 0.01
 # The threshold at which to stop accepting new keyframes. Increase this threshold 
 # for fewer keyframes. Decrease it to add more. Set to 0 to force every frame to 
 # be its own partition (untested).
-KNEE_THRESHOLD = 0.0001
+KNEE_THRESHOLD = 0.05
 
 # The maximum number of threading jobs to run simultaneously.
 MAX_OPTFLOW_JOBS = 1

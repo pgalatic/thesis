@@ -18,6 +18,12 @@ import threading
 # LOCAL LIB
 from const import *
 
+def makedirs(dirname):
+    try:
+        os.makedirs(dirname)
+    except FileExistsError:
+        pass # The directory was created just before we tried to create it.
+
 def wait_complete(tag, target, args, remote):
     '''
     A function used to ensure that only one of N nodes completes a given task.
@@ -123,3 +129,4 @@ def wait_for(fname):
     print('Waiting for {}...'.format(fname))
     while not os.path.exists(fname):
         time.sleep(1)
+    print('...{} found!'.format(fname))

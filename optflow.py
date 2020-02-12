@@ -117,7 +117,7 @@ def optflow(resolution, downsamp_factor, num_frames, remote, local):
     
     flow = remote / ('flow_' + resolution + '/')
     if not os.path.isdir(str(flow)):
-        os.makedirs(str(flow))
+        common.makedirs(str(flow))
         
     # Get a job! We need our first job before we can start threading.
     job = claim_job(remote, flow, local, resolution, num_frames)

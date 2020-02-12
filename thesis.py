@@ -58,10 +58,10 @@ def main():
     # Make output folder(s), if necessary
     remote = pathlib.Path(args.remote) / os.path.basename(os.path.splitext(args.video)[0])
     if not os.path.isdir(str(remote)):
-        os.makedirs(str(remote))
+        common.makedirs(str(remote))
     local = pathlib.Path(args.local) / os.path.basename(os.path.splitext(args.video)[0])
     if not os.path.isdir(str(local)):
-        os.makedirs(str(local))
+        common.makedirs(str(local))
     reel = local / os.path.basename(args.video)
     model = local / os.path.basename(args.style)
     
@@ -82,7 +82,6 @@ def main():
         shutil.copyfile(args.local_style, str(model))
     else:
         common.wait_for(args.style)
-        pdb.set_trace()
         shutil.copyfile(args.style, str(model))
     
     # Split video into individual frames
