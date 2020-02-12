@@ -83,6 +83,7 @@ Nodes are assumed to be of roughly equivalent computation power. The program ope
 Known issues:
 * Because of an interaction between Python's subprocess and the optical flow calculations, a benign message `error: unexpected parameter '|'` is often printed.
 * If the shared filesystem runs out of memory, the program may loop endlessly trying to create the same optical flow or stylization images, because Python's open(fname, 'x') will execute successfully even though the file is not created.
+* If the program produces images that are mostly or entirely blank, that means that the Torch installation is faulty. It is very particular. I fixed this issue by uninstalling Torch, cloning an old (Torch distro)[https://github.com/torch/distro], running install-deps, install.sh, and using Luarocks to install [torch, nn, image, lua-cjson]. Then, I ran update.sh and the problem was fixed. 
 
 Future work:
 * Enabling CUDA/CUDNN is an important priority, and is unfortunately more difficult due to circumstances involving the core implementation of this program. The core program is currently implemented in Torch. As noted in [Issue #7](https://github.com/manuelruder/fast-artistic-videos/issues/7), Torch's CUDA/CUDNN hooks are extremely finicky and often result in unusable outputs. I have tried many different version of Torch and CUDA/CUDNN with no success resolving this issue, and it will probably involve a conversion of the core implementation to pyTorch, an avenue I am pursuing as another part of my graduate work.
