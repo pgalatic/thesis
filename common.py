@@ -120,5 +120,6 @@ def wait_for(fname):
     WAIT until a file exists.
     '''
     # If you wish upon a star...
+    print('Waiting for {}...'.format(fname))
     while not os.path.exists(fname):
         time.sleep(1)

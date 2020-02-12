@@ -78,10 +78,11 @@ def main():
     if args.local_style:
         # Only upload if strictly necessary.
         if not os.path.exists(args.style):
-            common.upload_Files([args.local_style], args.style, absolute_path=True)
+            common.upload_files([args.local_style], args.style, absolute_path=True)
         shutil.copyfile(args.local_style, str(model))
     else:
         common.wait_for(args.style)
+        pdb.set_trace()
         shutil.copyfile(args.style, str(model))
     
     # Split video into individual frames
