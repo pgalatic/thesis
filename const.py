@@ -25,8 +25,8 @@ EPSILON = 0.01
 KNEE_THRESHOLD = 0.05
 
 # The maximum number of threading jobs to run simultaneously.
-MAX_OPTFLOW_JOBS = 1
-MAX_UPLOAD_JOBS = 1
+MAX_OPTFLOW_JOBS = 4
+MAX_UPLOAD_JOBS = 4
 
 # These are names of functions that only one computer should complete while the 
 # others wait.

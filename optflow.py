@@ -50,7 +50,7 @@ def claim_job(remote, flow, local, resolution, num_frames):
             with open(placeholder, 'x') as handle:
                 handle.write('PLACEHOLDER CREATED BY {name}'.format(name=platform.node()))
             
-            print('Job claimed: {}'.format(next_job))
+            # print('Job claimed: {}'.format(next_job))
             return next_job
         except FileExistsError:
             # We couldn't claim that job, so try the next one.
@@ -63,6 +63,8 @@ def run_job(job, flow, local, downsamp_factor, put_thread):
     if job == None or job < 0:
         raise Exception('Bad job passed to run_job: {job}'.format(job=job))
     
+    print('\nComputing optical flow for job {job}.'.format(job=job))
+    
     start_local = str(local / (FRAME_NAME % job))
     end_local = str(local / (FRAME_NAME % (job + 1)))
     forward_name = str(local / 'forward_{i}_{j}.flo'.format(i=job, j=job+1))
@@ -71,7 +73,7 @@ def run_job(job, flow, local, downsamp_factor, put_thread):
     reliable_backward = str(local / 'reliable_{j}_{i}.pgm'.format(i=job, j=job+1))
         
     # Compute forward optical flow.
-    print('\nComputing forward optical flow for job {job}.'.format(job=job))
+    # print('\nComputing forward optical flow for job {job}.'.format(job=job))
     forward_dm = subprocess.Popen([
         './core/deepmatching-static', start_local, end_local, '-nt', '0', '-downscale', downsamp_factor
     ], stdout=subprocess.PIPE)

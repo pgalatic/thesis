@@ -163,7 +163,7 @@ int main(int argc, char** args) {
     checkConsistency(flow1, flow2, false, structure, reliable);
   }
 
-  printf(args[3]);
+  //printf(args[3]);
 
   
   reliable.clip(0.0f, 255.0f);
