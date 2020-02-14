@@ -19,6 +19,12 @@ PREFIX_FORMAT = 'out-%05d.png'
 # A small constant useful to avoid dividing by zero.
 EPSILON = 0.01
 
+# Any key pair of frames should be several times more different from another as
+# the average pair of frames. This is to guard against keyframes being chosen 
+# to fill the knee-point quota, which can perform terribly on mostly contiguous
+# videos.
+MIN_DIST_FACTOR = 5
+
 # The threshold at which to stop accepting new keyframes. Increase this threshold 
 # for fewer keyframes. Decrease it to add more. Set to 0 to force every frame to 
 # be its own partition (untested).

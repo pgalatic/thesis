@@ -9,7 +9,6 @@ import sys
 import pdb
 import glob
 import time
-import shutil
 import platform
 import threading
 import subprocess

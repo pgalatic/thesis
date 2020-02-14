@@ -13,7 +13,6 @@ import pathlib
 import platform
 import threading
 import subprocess
-from statistics import mean
 
 # EXTERNAL LIB
 import numpy as np
@@ -21,49 +20,8 @@ from PIL import Image
 
 # LOCAL LIB
 import common
+import keyframes
 from const import *
-
-def kl_dist(frame1, frame2):
-    # Uses Kullback-Liebler divergence as in Courbon et al. (2010).
-    # http://www.sciencedirect.com/science/article/pii/S0967066110000808
-    array1 = np.asarray(Image.open(frame1)).astype(np.float64) / 255.
-    array2 = np.asarray(Image.open(frame2)).astype(np.float64) / 255.
-    
-    hist1 = array1.mean(axis=2).flatten()
-    hist2 = array2.mean(axis=2).flatten()
-    
-    # Add EPSILON everywhere to avoid dividing by zero.
-    p = (hist1 + EPSILON) / np.sum(hist1)
-    q = (hist2 + EPSILON) / np.sum(hist2)
-    
-    # As implemented in "KL Divergence Python Example" by Cory Malkin (2019).
-    # https://towardsdatascience.com/kl-divergence-python-example-b87069e4b810
-    return np.sum(p * np.log(p / (q)))
-
-def get_dists(frames, dist_func):
-    # Iterate over all consecutive pairs and find the distances between them.
-    dists = []
-    for idx, (frame1, frame2) in enumerate(zip(frames, frames[1:])):
-        # Store the names of the frames, their location in the sequence, and the distance between them.
-        dists.append((frame1, frame2, idx, dist_func(frame1, frame2)))
-    # Sort in descending order by the distance between frames.
-    return sorted(dists, key=lambda x: x[-1], reverse=True)
-
-def divide(frames):
-    dists = get_dists(frames, kl_dist) # Change the second parameter to change the distance metric.
-    # Loop until the "knee point" where keyframe candidates become more similar is reached.
-    total_divergence = EPSILON
-    keyframes = []
-    for dist in dists:
-        if dist[-1] / total_divergence < KNEE_THRESHOLD:
-            break
-        total_divergence += dist[-1]
-        keyframes.append(dist[2])
-    # Use the keyframes to compute partitions, then return the partitions.
-    keyframes = sorted(keyframes)
-    # Partitions are a list of lists of frame filenames.
-    partitions = [frames[idx:idy] for idx, idy in zip([0] + keyframes, keyframes + [None])]
-    return partitions
 
 def claim_job(remote, partitions):
     for idx, partition in enumerate(partitions):
@@ -148,11 +106,9 @@ def run_job(idx, frames, resolution, style, remote, local, put_thread):
 def stylize(resolution, style, remote, local):
     # Find keyframes and use those as delimiters.
     frames = [str(local / frame) for frame in glob.glob1(str(local), '*.ppm')]
-    partitions = common.wait_complete(DIVIDE_TAG, divide, [frames], remote)
+    partitions = common.wait_complete(DIVIDE_TAG, keyframes.divide, [frames], remote)
     # Sort in ascending order of length. This will mitigate the slowest-link effect of any weak nodes.
     partitions = sorted(partitions, key=lambda x: len(x))
-    print('Number of partitions: {}'.format(len(partitions)))
-    print('Average partition length: {}'.format(mean([len(partition) for partition in partitions])))
     
     running = []
     completing = []
