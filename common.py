@@ -19,10 +19,16 @@ import threading
 from const import *
 
 def makedirs(dirname):
-    try:
-        os.makedirs(dirname)
-    except FileExistsError:
-        pass # The directory was created just before we tried to create it.
+    # Convert from pathlib.Path to string if necessary.
+    dirname = str(dirname)
+    if not os.path.isdir(dirname):
+        try:
+            os.makedirs(dirname)
+        except FileExistsError:
+            pass # The directory was created just before we tried to create it.
+        except PermissionError:
+            print('Directory {} creation failed! Are you sure that the common folder is accessible/mounted?'.format(dirname))
+            raise
 
 def wait_complete(tag, target, args, remote):
     '''
@@ -115,7 +121,7 @@ def upload_files(fnames, dst, absolute_path=False):
             os.rename(partname, newname)
         except FileExistsError:
             # Try to upload the next file.
-            print('\nFile already exists!')
+            print('\nFailed uploading -- file {} already exists!'.format(fname))
             pass
         except OSError:
             # The file path specified is incorrect, or there was another error.

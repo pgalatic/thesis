@@ -92,17 +92,20 @@ def run_job(job, flow, local, downsamp_factor, put_thread):
     
     # Compute consistency check for forwards optical flow.
     # print('Computing consistency check for forwards optical flow.')
-    con1 = subprocess.run([
+    con1 = subprocess.Popen([
         './core/consistencyChecker/consistencyChecker',
         forward_name, backward_name, reliable_forward, start_local
     ])
     
     # Compute consistency check for backwards optical flow.
     # print('Computing consistency check for backwards optical flow.')
-    con2 = subprocess.run([
+    con2 = subprocess.Popen([
         './core/consistencyChecker/consistencyChecker',
         backward_name, forward_name, reliable_backward, end_local
     ])
+    
+    con1.wait()
+    con2.wait()
     
     # Spawn a thread to put the produced files in the remote directory.
     # TODO: Reduce thread creation overhead by having one background thread operating on a list?
@@ -118,8 +121,7 @@ def optflow(resolution, downsamp_factor, num_frames, remote, local):
     print('Starting optical flow calculations...')
     
     flow = remote / ('flow_' + resolution + '/')
-    if not os.path.isdir(str(flow)):
-        common.makedirs(str(flow))
+    common.makedirs(flow)
         
     # Get a job! We need our first job before we can start threading.
     job = claim_job(remote, flow, local, resolution, num_frames)

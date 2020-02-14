@@ -57,11 +57,9 @@ def main():
     
     # Make output folder(s), if necessary
     remote = pathlib.Path(args.remote) / os.path.basename(os.path.splitext(args.video)[0])
-    if not os.path.isdir(str(remote)):
-        common.makedirs(str(remote))
+    common.makedirs(remote)
     local = pathlib.Path(args.local) / os.path.basename(os.path.splitext(args.video)[0])
-    if not os.path.isdir(str(local)):
-        common.makedirs(str(local))
+    common.makedirs(local)
     reel = local / os.path.basename(args.video)
     model = local / os.path.basename(args.style)
     

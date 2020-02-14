@@ -13,6 +13,7 @@ import pathlib
 import platform
 import threading
 import subprocess
+from statistics import mean
 
 # EXTERNAL LIB
 import numpy as np
@@ -89,7 +90,8 @@ def run_job(idx, frames, resolution, style, remote, local):
     # Copy the relevant files into a local directory.
     # This is not efficient, but it makes working with the Torch script easier.
     processing = local / 'processing_{}'.format(idx)
-    idys = list(map(int, [re.findall(r'\d+', frame)[0] for frame in frames]))
+    # Get a list of the indices of the frames we're manipulating.
+    idys = list(map(int, [re.findall(r'\d+', os.path.basename(frame))[0] for frame in frames]))
     if not os.path.isdir(str(processing)):
         os.makedirs(str(processing))
     for idy, frame in enumerate(frames):
@@ -119,7 +121,7 @@ def run_job(idx, frames, resolution, style, remote, local):
     # use_cudnn = '1' if args.gpu_lib == 'cudnn' and int(args.gpu_num) > -1 else '0'
 
     # Run stylization.
-    proc = subprocess.Popen([
+    subprocess.run([
         'th', 'fast_artistic_video.lua',
         '-input_pattern', input_pattern,
         '-flow_pattern', flow_pattern,
@@ -127,16 +129,14 @@ def run_job(idx, frames, resolution, style, remote, local):
         '-output_prefix', output_prefix,
         '-use_cudnn', use_cudnn,
         '-gpu', gpu_num,
-        '-model_vid', '../' + style,
+        '-model_vid', str('..' / style),
         '-model_img', 'self'
     ], cwd=str(pathlib.Path(os.getcwd()) / 'core'))
     # print(' '.join(proc.args))
-    proc.wait()
     
-    status = proc.wait(TIMEOUT)
     # Upload the product of stylization to the remote directory every TIMEOUT seconds.
     oldnames = sorted([str(processing / fname) for fname in glob.glob1(str(processing), '*.png')])
-    newnames = [str(processing / (PREFIX_FORMAT % (idy + 1))) for idy in idys]
+    newnames = [str(processing / (PREFIX_FORMAT % (idy))) for idy in idys]
     [shutil.move(oldname, newname) for oldname, newname in zip(oldnames, newnames)]
     
     print('Uploading {} files...'.format(len(newnames)))
@@ -146,6 +146,8 @@ def stylize(resolution, style, remote, local):
     # Find keyframes and use those as delimiters.
     frames = [str(local / frame) for frame in glob.glob1(str(local), '*.ppm')]
     partitions = common.wait_complete(DIVIDE_TAG, divide, [frames], remote)
+    print('Number of partitions: {}'.format(len(partitions)))
+    print('Average partition length: {}'.format(mean([len(partition) for partition in partitions])))
     
     running = []
     last_idx, partition = claim_job(remote, 0, partitions)
