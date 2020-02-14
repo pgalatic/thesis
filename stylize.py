@@ -65,23 +65,25 @@ def divide(frames):
     partitions = [frames[idx:idy] for idx, idy in zip([0] + keyframes, keyframes + [None])]
     return partitions
 
-def claim_job(remote, start_at, partitions):
-    for idx, partition in enumerate(partitions[start_at:]):
-        if len(partition) == 0: continue
+def claim_job(remote, partitions):
+    for idx, partition in enumerate(partitions):
+        if len(partition) == 0: continue # Edge case; this shouldn't happen
     
         placeholder = str(remote / 'partition_{}.plc'.format(idx))
-        try:
-            with open(placeholder, 'x') as handle:
-                handle.write('PLACEHOLDER CREATED BY {name}'.format(name=platform.node()))
-            
-            print('Partition claimed: {}:{}'.format(
-                os.path.basename(partition[0]), os.path.basename(partition[-1])))
-            
-            return idx, partition
-            
-        except FileExistsError:
-            # We couldn't claim this partition, so try the next one.
-            continue
+        # Check if someone has already claimed this partition.
+        if not os.path.isdir(placeholder):
+            try:
+                with open(placeholder, 'x') as handle:
+                    handle.write('PLACEHOLDER CREATED BY {name}'.format(name=platform.node()))
+                
+                print('Partition claimed: {}:{}'.format(
+                    os.path.basename(partition[0]), os.path.basename(partition[-1])))
+                
+                return idx, partition
+                
+            except FileExistsError:
+                # We couldn't claim this partition, so try the next one.
+                continue
     
     # There are no more jobs.
     return None, None
@@ -89,11 +91,10 @@ def claim_job(remote, start_at, partitions):
 def run_job(idx, frames, resolution, style, remote, local):
     # Copy the relevant files into a local directory.
     # This is not efficient, but it makes working with the Torch script easier.
-    processing = local / 'processing_{}'.format(idx)
+    processing = local / 'partition_{}'.format(idx)
     # Get a list of the indices of the frames we're manipulating.
     idys = list(map(int, [re.findall(r'\d+', os.path.basename(frame))[0] for frame in frames]))
-    if not os.path.isdir(str(processing)):
-        os.makedirs(str(processing))
+    common.makedirs(processing)
     for idy, frame in enumerate(frames):
         newname = str(processing / (FRAME_NAME % (idy + 1)))
         shutil.copyfile(frame, newname)
@@ -150,12 +151,12 @@ def stylize(resolution, style, remote, local):
     print('Average partition length: {}'.format(mean([len(partition) for partition in partitions])))
     
     running = []
-    last_idx, partition = claim_job(remote, 0, partitions)
+    idx, partition = claim_job(remote, partitions)
     
     while partition is not None:
         # Style transfer is so computationally intense that threading it doesn't yield much time gain.
-        run_job(last_idx, partition, resolution, style, remote, local)
-        last_idx, partition = claim_job(remote, last_idx, partitions)
+        run_job(idx, partition, resolution, style, remote, local)
+        idx, partition = claim_job(remote, partitions)
     
     # Remove the partitioning file if it still exists (is this necessary?).
     if os.path.exists(DIVIDE_TAG):
