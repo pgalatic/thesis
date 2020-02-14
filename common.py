@@ -12,6 +12,7 @@ import pickle
 import pathlib
 import platform
 import threading
+import traceback
 
 # EXTERNAL LIB
 
@@ -69,7 +70,7 @@ def wait_complete(tag, target, args, remote):
         return result
     except FileExistsError:
         # We couldn't claim that job, so WAIT until it's finished, then return None.
-        print('Job {} already claimed; waiting for output...')
+        print('Job {} already claimed; waiting for output...'.format(tag))
         # Until the placeholder is gone, the file may still be incompletely uploaded.
         while os.path.exists(placeholder):
             time.sleep(1)
@@ -126,10 +127,13 @@ def upload_files(fnames, dst, absolute_path=False):
         except FileExistsError:
             # Try to upload the next file.
             print('\nFailed uploading -- file {} already exists!'.format(fname))
-            pass
         except OSError:
             # The file path specified is incorrect, or there was another error.
-            pass
+            print('\nFailed uploading {} -- OSError!'.format(fname))
+            traceback.print_exc()
+        finally:
+            if os.path.exists(partname):
+                os.remove(partname)
             
 def wait_for(fname):
     '''
