@@ -50,6 +50,10 @@ def wait_complete(tag, target, args, remote):
     write_to = str(remote / tag)
     
     try:
+        # If either of these exist, it means that the result is being worked on, and we should fall through.
+        if os.path.exists(placeholder) or os.path.exists(write_to):
+            raise FileExistsError('{} or {} already exist -- don\'t panic! Waiting for output...'.format(placeholder, write_to))
+    
         # This will only succeed if this program successfully created the placeholder.
         with open(placeholder, 'x') as handle:
             handle.write('PLACEHOLDER CREATED BY {name}'.format(name=platform.node()))

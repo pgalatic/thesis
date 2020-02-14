@@ -88,7 +88,7 @@ def claim_job(remote, partitions):
     # There are no more jobs.
     return None, None
 
-def run_job(idx, frames, resolution, style, remote, local):
+def run_job(idx, frames, resolution, style, remote, local, put_thread):
     # Copy the relevant files into a local directory.
     # This is not efficient, but it makes working with the Torch script easier.
     processing = local / 'partition_{}'.format(idx)
@@ -141,24 +141,30 @@ def run_job(idx, frames, resolution, style, remote, local):
     [shutil.move(oldname, newname) for oldname, newname in zip(oldnames, newnames)]
     
     print('Uploading {} files...'.format(len(newnames)))
-    threading.Thread(target=common.upload_files, args=(newnames, remote)).start()
+    complete = threading.Thread(target=common.upload_files, args=(newnames, remote))
+    put_thread.append(complete)
+    complete.start()
 
 def stylize(resolution, style, remote, local):
     # Find keyframes and use those as delimiters.
     frames = [str(local / frame) for frame in glob.glob1(str(local), '*.ppm')]
     partitions = common.wait_complete(DIVIDE_TAG, divide, [frames], remote)
+    # Sort in ascending order of length. This will mitigate the slowest-link effect of any weak nodes.
+    partitions = sorted(partitions, key=lambda x: len(x))
     print('Number of partitions: {}'.format(len(partitions)))
     print('Average partition length: {}'.format(mean([len(partition) for partition in partitions])))
     
     running = []
+    completing = []
     idx, partition = claim_job(remote, partitions)
     
     while partition is not None:
         # Style transfer is so computationally intense that threading it doesn't yield much time gain.
-        run_job(idx, partition, resolution, style, remote, local)
+        run_job(idx, partition, resolution, style, remote, local, completing)
         idx, partition = claim_job(remote, partitions)
     
-    # Remove the partitioning file if it still exists (is this necessary?).
-    if os.path.exists(DIVIDE_TAG):
-        os.remove(DIVIDE_TAG)
+    # Join all remaining threads.
+    print('Wrapping up threads...')
+    for thread in completing:
+        thread.join()
         
