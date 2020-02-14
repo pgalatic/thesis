@@ -13,7 +13,7 @@ RESOLUTION_DEFAULT = 'default'
 
 # The prefixes used by the core stylization procedure to denote the names of 
 # output images and upload them correctly to the common directory.
-OUTPUT_PREFIX = 'out'
+OUTPUT_PREFIX = 'temp'
 PREFIX_FORMAT = 'out-%05d.png'
 
 # A small constant useful to avoid dividing by zero.
