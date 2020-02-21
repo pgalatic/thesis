@@ -109,7 +109,7 @@ def main():
     if args.no_cuts:
         partitions = [frames]
     elif args.read_cuts:
-        partitions = cut.read_from(args.read_cuts, frames)
+        partitions = cut.read_cuts(args.read_cuts, frames)
     else:
         partitions = common.wait_complete(DIVIDE_TAG, cut.divide, [frames, args.write_cuts], remote)
     

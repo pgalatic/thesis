@@ -5,9 +5,10 @@ sudo apt-get -y update
 # Install ffmpeg
 sudo apt-get -y install ffmpeg
 
-# Install Python/Pip
+# Install Python/Pip and dependencies
 sudo apt-get -y install python3
-sudo apt-get -y install python-pip
+sudo apt-get -y install python3-pip
+pip3 install -r requirements.txt
 
 # Install the latest Torch
 git clone https://github.com/torch/distro.git ~/torch --recursive
