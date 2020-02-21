@@ -40,6 +40,8 @@ def claim_job(remote, partitions):
                 
             except FileExistsError:
                 # We couldn't claim this partition, so try the next one.
+                print('Already claimed: {}:{}; moving on...'.format(
+                    os.path.basename(partition[0]), os.path.basename(partition[-1])))
                 continue
     
     # There are no more jobs.

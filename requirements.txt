@@ -1,5 +1,5 @@
 numpy==1.16.2
 Pillow==7.0.0
-ffprobe==0.5
+ffprobe3==0.1.2
 h5py==2.10.0
 scipy==1.4.1

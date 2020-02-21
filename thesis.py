@@ -94,7 +94,7 @@ def main():
     
     # Split video into individual frames
     num_frames = video.split_frames(args.processor, args.resolution, reel, local)
-    frames = [str(local / frame) for frame in glob.glob1(str(local), '*.ppm')]
+    frames = sorted([str(local / frame) for frame in glob.glob1(str(local), '*.ppm')])
     
     if args.test:
         num_frames = NUM_FRAMES_FOR_TEST
@@ -123,6 +123,10 @@ def main():
     # Combining frames into a final video won't work if we're testing on only a portion of the frames.
     if not args.test:
         video.combine_frames(args.processor, reel, remote, local)
+    
+    # Clean up any lingering files.
+    if os.path.exists(DIVIDE_TAG):
+        os.remove(DIVIDE_TAG)
 
 if __name__ == '__main__':
     main()
