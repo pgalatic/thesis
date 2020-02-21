@@ -8,6 +8,7 @@
 import os
 import pdb
 import sys
+import glob
 import shutil
 import pathlib
 import argparse
@@ -20,6 +21,7 @@ import numpy as np
 import common
 import video
 import optflow
+import cut
 import stylize
 from const import *
 
@@ -36,6 +38,8 @@ def parse_args():
         help='The path to the model used for stylization as it would appear on the common directory, e.g. \\mnt\\o\\foo\\bar.t7\\')
         
     # Optional arguments
+    ap.add_argument('--test', action='store_true',
+        help='Test the algorithm by stylizing only a few frames of the video, rather than all of the frames.')
     ap.add_argument('--local', type=str, nargs='?', default='.',
         help='The local directory where files will temporarily be stored during processing, to cut down on communication costs over NFS. By defualt, local files will be stored in a folder at the same level of the repository [.].')
     ap.add_argument('--local_video', type=str, nargs='?', default=None,
@@ -48,6 +52,12 @@ def parse_args():
         help='The width to process the video at in the format w:h [Original resolution].')
     ap.add_argument('--downsamp_factor', type=str, nargs='?', default='2',
         help='The downsampling factor for optical flow calculations. Increase this slightly if said calculations are too slow or memory-intense for your machine [2].')    
+    ap.add_argument('--no_cuts', action='store_true',
+        help='If a video has no cuts, use this to parallelize only the optical flow calculations.')
+    ap.add_argument('--read_cuts', type=str, nargs='?', default=None,
+        help='The .csv file containing frames that denote cuts. Computing cuts manually is always more accurate than an automatic assessment, if time permits. Use video.py to split frames for manual inspection. [None]')
+    ap.add_argument('--write_cuts', type=str, nargs='?', default=None,
+        help='The .csv file in which to write automatically computed cuts for later reading [None].')
     
     return ap.parse_args()
 
@@ -84,21 +94,35 @@ def main():
     
     # Split video into individual frames
     num_frames = video.split_frames(args.processor, args.resolution, reel, local)
+    frames = [str(local / frame) for frame in glob.glob1(str(local), '*.ppm')]
+    
+    if args.test:
+        num_frames = NUM_FRAMES_FOR_TEST
+        frames = frames[:NUM_FRAMES_FOR_TEST]
             
     # Spawn a thread for optical flow calculation.
     optflow_thread = threading.Thread(target=optflow.optflow,
         args=(args.resolution, args.downsamp_factor, num_frames, remote, local))
     optflow_thread.start()
+    
+    # Either read the cuts from disk or compute them manually (if applicable).
+    if args.no_cuts:
+        partitions = [frames]
+    elif args.read_cuts:
+        partitions = cut.read_from(args.read_cuts, frames)
+    else:
+        partitions = common.wait_complete(DIVIDE_TAG, cut.divide, [frames, args.write_cuts], remote)
+    
     # FIXME: Right now, the Torch stylization procedure crashes when it tries to use an incomplete file.
-    # As a result, we have to join the thread in order to continue.
+    # As a result, we have to join the thread in order to perform stylization.
     optflow_thread.join()
-        
+    
     # Compute neural style transfer.
-    stylize.stylize(args.resolution, model, remote, local)
+    stylize.stylize(args.resolution, model, partitions, remote, local)
     
-    sys.exit(1)
-    
-    video.combine_frames(args.processor)
+    # Combining frames into a final video won't work if we're testing on only a portion of the frames.
+    if not args.test:
+        video.combine_frames(args.processor, reel, remote, local)
 
 if __name__ == '__main__':
     main()

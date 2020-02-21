@@ -1,9 +1,10 @@
 # author: Paul Galatic
 #
-# Computes keys given a video.
+# Computes cuts given a video.
 
 # STD LIB
 import os
+import csv
 import pdb
 import sys
 import glob
@@ -19,15 +20,23 @@ from PIL import Image
 import common
 from const import *
 
+# TODO: https://pyscenedetect.readthedocs.io/en/latest/examples/usage-example/
+
 def parse_args():
     '''Parses arguments.'''
     ap = argparse.ArgumentParser()
     
     # Required arguments
-    ap.add_argument('src', type=str, nargs='?', default=None,
+    ap.add_argument('src', type=str,
         help='The path to the folder in which the frames are contained.')
     
     # Optional arguments
+    ap.add_argument('--extension', type=str, nargs='?', default='.ppm',
+        help='The extension of the frames in src. Change this if you only have, say, .png files [.ppm].')
+    ap.add_argument('--read_from', type=str, nargs='?', default=None,
+        help='The .csv file containing frames that denote cuts. Determining cuts manually is always more accurate than an automatic assessment, if time permits. Use video.py to split frames for manual inspection. [None]')
+    ap.add_argument('--write_to', type=str, nargs='?', default=None,
+        help='The .csv file in which to write automatically computed cuts for later reading [None].')
     
     return ap.parse_args()
 
@@ -57,7 +66,7 @@ def get_dists(frames, dist_func):
     # Sort in descending order by the distance between frames.
     return sorted(dists, key=lambda x: x[-1], reverse=True)
 
-def divide(frames):
+def divide(frames, write_to=None):
     distpairs = get_dists(frames, kl_dist) # Change the second parameter to change the distance metric.
     # Ignore any distances that aren't significantly above the average as defined by MIN_DIST_FACTOR.
     dists = np.array([pair[-1] for pair in distpairs])
@@ -74,8 +83,32 @@ def divide(frames):
         keys.append(pair[0])
     # Use the keys to compute partitions, then return the partitions.
     keys = sorted(keys)
+    
+    # Write the keys to a .csv file, if applicable.
+    if write_to:
+        with open(write_to, 'w') as f:
+            wtr = csv.writer(f)
+            for key in keys:
+                wtr.writerow([key])
+        print('...Wrote keys to {}.'.format(write_to))
+    
     # Partitions are a list of lists of frame filenames.
     partitions = [frames[idx:idy] for idx, idy in zip([0] + keys, keys + [None])]
+    
+    assert(len(partitions) == len(keys) + 1)
+    
+    print('Number of partitions: {}'.format(len(partitions)))
+    print('Average partition length: {}'.format(mean([len(partition) for partition in partitions])))
+    
+    return partitions
+
+def read_cuts(fname, frames):
+    with open(fname, 'r') as f:
+        rdr = csv.reader(f)
+        keys = sorted([int(row[0]) for row in rdr])
+        partitions = [frames[idx:idy] for idx, idy in zip([0] + keys, keys + [None])]
+    
+    assert(len(partitions) == len(keys) + 1)
     
     print('Number of partitions: {}'.format(len(partitions)))
     print('Average partition length: {}'.format(mean([len(partition) for partition in partitions])))
@@ -86,9 +119,15 @@ def main():
     args = parse_args()
     
     src = pathlib.Path(args.src)
+    frames = [str(src / name) for name in glob.glob1(str(src), '*{}'.format(args.extension))]
     
-    frames = [str(src / name) for name in glob.glob1(str(src), '*.ppm')]
-    partitions = divide(frames)
+    if len(frames) == 0:
+        sys.exit('There are no frames of extension {} -- exiting.'.format(args.extension))
+    
+    if args.read_from:
+        partitions = read_cuts(args.read_from, frames)
+    else:
+        partitions = divide(frames, args.write_to)
     
     pdb.set_trace() # This main() is used principally for debugging.
 

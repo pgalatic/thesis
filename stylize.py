@@ -20,7 +20,6 @@ from PIL import Image
 
 # LOCAL LIB
 import common
-import keyframes
 from const import *
 
 def claim_job(remote, partitions):
@@ -103,10 +102,7 @@ def run_job(idx, frames, resolution, style, remote, local, put_thread):
     put_thread.append(complete)
     complete.start()
 
-def stylize(resolution, style, remote, local):
-    # Find keyframes and use those as delimiters.
-    frames = [str(local / frame) for frame in glob.glob1(str(local), '*.ppm')]
-    partitions = common.wait_complete(DIVIDE_TAG, keyframes.divide, [frames], remote)
+def stylize(resolution, style, partitions, remote, local):
     # Sort in ascending order of length. This will mitigate the slowest-link effect of any weak nodes.
     partitions = sorted(partitions, key=lambda x: len(x))
     

@@ -36,6 +36,8 @@ def parse_args():
         help='The path to the folder in which the frames are contained, if combining them.')
     ap.add_argument('--dst', type=str, default=None,
         help='The path to the folder in which the product(s) of the operation will be placed. By default, it will place products in a folder derived from the name of the reel.')
+    ap.add_argument('--extension', type=str, nargs='?', default='.ppm',
+        help='The extension used for the frames of a split video. If performing manual cuts, set this to .png [.ppm].')
     ap.add_argument('--processor', type=str, nargs='?', default='ffmpeg',
         help='The video processer to use, either ffmpeg (preferred) or avconv (untested) [ffmpeg].')
     ap.add_argument('--resolution', type=str, nargs='?', default=RESOLUTION_DEFAULT,
@@ -46,29 +48,28 @@ def parse_args():
 def check_deps(processor):
     check = shutil.which(processor)
     if not check:
-        print('Video processor {} not installed. Aborting'.format(processor))
-        sys.exit(1)
-    
+        sys.exit('Video processor {} not installed. Aborting'.format(processor))
     if not (os.path.exists('core/deepmatching-static') and os.path.exists('core/deepflow2-static')):
-        print('Deepmatching/Deepflow static binaries are missing. Aborting')
-        sys.exit(1)
+        sys.exit('Deepmatching/Deepflow static binaries are missing. Aborting')
     else:
         # Ensure that Deepmatching/Deepflow can be executed.
         subprocess.Popen(['chmod', '+x', 'core/deepmatching-static'])
         subprocess.Popen(['chmod', '+x', 'core/deepflow2-static'])
 
-def split_frames(processor, resolution, reel, local):
+def split_frames(processor, resolution, reel, local, extension='.ppm'):
     # Preliminary operations to make sure that the environment is set up properly.
     check_deps(processor)
 
     # Split video into a collection of frames. It's necessary to have a local copy of the frames.
     # Don't split the video if we've already done so.
-    if not os.path.isfile(str(local / 'frame_00001.ppm')):
+    if not os.path.isfile(str(local / 'frame_00001{}'.format(extension))):
+        # This line is to account for extensions other than the default.
+        frame_name = os.path.splitext(FRAME_NAME)[0] + extension
         if resolution == RESOLUTION_DEFAULT:
-            proc = subprocess.Popen([processor, '-i', str(reel), str(local / FRAME_NAME)])
+            proc = subprocess.Popen([processor, '-i', str(reel), str(local / frame_name)])
         else:
             proc = subprocess.Popen([processor, '-i', str(reel), '-vf', 'scale=' + resolution, 
-                str(local / FRAME_NAME)])
+                str(local / frame_name)])
     
         # Wait until splitting the frames is finished, so we know how many there are.
         proc.wait()
@@ -102,7 +103,7 @@ def combine_frames(processor, reel, remote, local):
     
     # Combine stylized frames into video.
     subprocess.run([
-        processor, '-i', str(remote / PREFIX_FORMAT), 
+        processor, '-i', str(local / PREFIX_FORMAT), 
         '-filter:v', 'setpts={}/{}*N/TB'.format(duration, num_frames),
         '-r', '{}/{}'.format(num_frames, duration),
         stylized
@@ -132,14 +133,13 @@ def main():
     common.makedirs(dst)
 
     if args.mode == 's' or args.mode == 'split':
-        split_frames(args.processor, args.resolution, args.reel, dst)
+        split_frames(args.processor, args.resolution, args.reel, dst, args.extension)
     elif args.mode == 'c' or args.mode == 'combine':
         if not args.src:
-            print('Please specify a source directory.')
-            sys.exit(1)
+            sys.exit('Please specify a source directory.')
         combine_frames(args.processor, args.reel, pathlib.Path(args.src), dst)
     else:
-        print('Mode {} not recognized; please try again.'.format(args.mode))
+        sys.exit('Mode {} not recognized; please try again.'.format(args.mode))
 
 if __name__ == '__main__':
     main()

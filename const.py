@@ -3,13 +3,16 @@
 # Stores constants for the program.
 #
 
-# The format name to properly split frames. Changing this would require changes 
-# in CORE.
+# The format name to properly split frames.
 FRAME_NAME = 'frame_%05d.ppm'
 
 # The default resolution keyword, for videos that should be stylized at the 
 # same resolution as their original resolution.
 RESOLUTION_DEFAULT = 'default'
+
+# When testing the algorithm, it is not immediately necessary to test it on a
+# full video; instead, it can be tested with the first few frames of a video.
+NUM_FRAMES_FOR_TEST = 5
 
 # The prefixes used by the core stylization procedure to denote the names of 
 # output images and upload them correctly to the common directory.
