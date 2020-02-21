@@ -15,7 +15,7 @@ import threading
 import subprocess
 
 # EXTERNAL LIB
-import ffprobe
+import ffprobe3
 
 # LOCAL LIB
 import common

@@ -2,6 +2,10 @@
 
 sudo apt-get -y update
 
+# Install Python/Pip
+sudo apt-get -y install python3
+sudo apt-get -y install python-pip
+
 # Install the latest Torch
 git clone https://github.com/torch/distro.git ~/torch --recursive
 bash ~/torch/install-deps
