@@ -68,8 +68,6 @@ def get_dists(frames, dist_func):
     return sorted(dists, key=lambda x: x[-1], reverse=True)
 
 def assess_partitions(partitions):
-    assert(len(partitions) == len(keys) + 1)
-
     logging.info('Number of partitions: {}'.format(len(partitions)))
     logging.info('Average partition length: {}'.format(mean([len(partition) for partition in partitions])))
 

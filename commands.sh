@@ -25,3 +25,6 @@ python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pg
 # Run silksong720 master
 python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/silksong720.mp4 /proj/videorendering-PG0/pgalatic/mosaic.t7 --local_video=videos/silksong720.mp4 --local_style=styles/checkpoint-mosaic-video.t7 --read_cuts=videos/silksong.csv
 
+# Run silksong720 worker
+python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/silksong720.mp4 /proj/videorendering-PG0/pgalatic/mosaic.t7 --read_cuts=videos/silksong.csv
+
