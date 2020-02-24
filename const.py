@@ -34,8 +34,8 @@ MIN_DIST_FACTOR = 5
 KNEE_THRESHOLD = 0.05
 
 # The maximum number of threading jobs to run simultaneously.
-MAX_OPTFLOW_JOBS = 4
-MAX_UPLOAD_JOBS = 4
+MAX_OPTFLOW_JOBS = 8
+MAX_UPLOAD_JOBS = 8
 
 # These are names of functions that only one computer should complete while the 
 # others wait.

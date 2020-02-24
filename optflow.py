@@ -89,12 +89,12 @@ def run_job(job, flow, local, downsamp_factor, put_thread):
         './core/deepflow2-static', end_local, start_local, backward_name, '-match'
     ], stdin=backward_dm.stdout)
     
-    # Compute consistency check for forwards optical flow.
+    # Compute consistency check for forwards optical flow. This might not be necessary?
     # print('Computing consistency check for forwards optical flow.')
-    con1 = subprocess.Popen([
-        './core/consistencyChecker/consistencyChecker',
-        forward_name, backward_name, reliable_forward, start_local
-    ])
+    #con1 = subprocess.Popen([
+    #    './core/consistencyChecker/consistencyChecker',
+    #    forward_name, backward_name, reliable_forward, start_local
+    #])
     
     # Compute consistency check for backwards optical flow.
     # print('Computing consistency check for backwards optical flow.')
@@ -116,11 +116,8 @@ def run_job(job, flow, local, downsamp_factor, put_thread):
     put_thread.append(complete)
     complete.start()
 
-def optflow(resolution, downsamp_factor, num_frames, remote, local): 
+def optflow(resolution, downsamp_factor, num_frames, remote, flow, local): 
     print('Starting optical flow calculations...')
-    
-    flow = remote / ('flow_' + resolution + '/')
-    common.makedirs(flow)
         
     # Get a job! We need our first job before we can start threading.
     job = claim_job(remote, flow, local, resolution, num_frames)

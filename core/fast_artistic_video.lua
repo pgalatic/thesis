@@ -21,10 +21,11 @@ Use a trained feedforward model to stylize an entire video.
 local cmd = torch.CmdLine()
 
 -- Main options
-cmd:option('-model_img', 'models/checkpoint-candy-image.t7')
+cmd:option('-model_img', 'self')
 cmd:option('-model_vid', 'models/checkpoint-candy-video.t7')
-cmd:option('-num_frames', 9999, 'maximum number of frames to process')
-cmd:option('-continue_with', 1, 'Continue with this frame')
+cmd:option('-num_frames', 65536, 'maximum number of frames to process')
+cmd:option('-continue_with', 1, 'Specify frame at which to resume stylization, if computation was interrupted')
+cmd:option('-new_cut', 0, 'If continuing, ignore previously stylized frames')
 
 cmd:option('-input_pattern', '')
 cmd:option('-output_prefix', 'out')
@@ -74,6 +75,7 @@ local function getFormatedFlowFileName(pattern, fromIndex, toIndex)
     function(a) return string.format(a, fromIndex) end )
   flowFileName = string.gsub(flowFileName, '%[(.-)%]',
     function(a) return string.format(a, toIndex) end )
+  print('Retrieved flowfile ' .. flowFileName)
   return flowFileName
 end
 
@@ -98,7 +100,9 @@ function func_load_style_image(i, pattern)
 end
 
 -- Keep history of previous frames, needed for evaluation
-if opt.continue_with > 2 then
+-- Only do this if we aren't processing a new cut where previous frames are not necessary
+if (opt.continue_with > 2 and not opt.new_cut == 0) then
+  print('Starting stylization WITH priors...')
   last_frame_stylized = func_load_style_image(opt.continue_with - 1, opt.output_prefix .. '-%05d.png')
   prev_last_frame_stylized = func_load_style_image(opt.continue_with - 2, opt.output_prefix .. '-%05d.png')
   last_frame = func_load_image(opt, opt.continue_with - 1, dtype)
@@ -106,6 +110,7 @@ if opt.continue_with > 2 then
   assert(prev_last_frame_stylized ~= nil)
   assert(last_frame ~= nil)
 else
+  print('Starting stylization WITHOUT priors...')
   last_frame_stylized = nil
   prev_last_frame_stylized = nil
   last_frame = nil
@@ -184,7 +189,14 @@ function func_save_image(opt, i, img)
   last_frame_stylized = img:clone()
 end
 
-function func_is_single_image(i, opt) return i == 1 or opt.create_inconsistent end
+function func_is_single_image(i, opt)
+    if opt.new_cut == 1 then
+      opt.new_cut = 0
+      return true
+    else
+      return i == 1 or opt.create_inconsistent
+    end
+end
 
 local function main()
   if (opt.input_pattern == '') then

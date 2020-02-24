@@ -93,7 +93,7 @@ def combine_frames(processor, reel, remote, local):
         shutil.copyfile(oldname, newname)
 
     # Get the original video's length. This will be necessary to properly reconstruct it.
-    probe = ffprobe.FFProbe(reel)
+    probe = ffprobe3.FFProbe(reel)
     duration = probe.streams[-1].duration
     num_frames = str(probe.streams[0].nb_frames)
     

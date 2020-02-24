@@ -68,6 +68,8 @@ def main():
     # Make output folder(s), if necessary
     remote = pathlib.Path(args.remote) / os.path.basename(os.path.splitext(args.video)[0])
     common.makedirs(remote)
+    flow = remote / ('flow_' + args.resolution + '/')
+    common.makedirs(flow)
     local = pathlib.Path(args.local) / os.path.basename(os.path.splitext(args.video)[0])
     common.makedirs(local)
     reel = local / os.path.basename(args.video)
@@ -102,7 +104,7 @@ def main():
             
     # Spawn a thread for optical flow calculation.
     optflow_thread = threading.Thread(target=optflow.optflow,
-        args=(args.resolution, args.downsamp_factor, num_frames, remote, local))
+        args=(args.resolution, args.downsamp_factor, num_frames, remote, flow, local))
     optflow_thread.start()
     
     # Either read the cuts from disk or compute them manually (if applicable).
@@ -110,6 +112,9 @@ def main():
         partitions = [frames]
     elif args.read_cuts:
         partitions = cut.read_cuts(args.read_cuts, frames)
+    elif args.test:
+        midpoint = NUM_FRAMES_FOR_TEST // 2
+        partitions = [frames[:midpoint], frames[midpoint:]]
     else:
         partitions = common.wait_complete(DIVIDE_TAG, cut.divide, [frames, args.write_cuts], remote)
     
@@ -118,7 +123,7 @@ def main():
     optflow_thread.join()
     
     # Compute neural style transfer.
-    stylize.stylize(args.resolution, model, partitions, remote, local)
+    stylize.stylize(args.resolution, model, partitions, remote, flow, local)
     
     # Combining frames into a final video won't work if we're testing on only a portion of the frames.
     if not args.test:

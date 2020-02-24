@@ -40,22 +40,25 @@ def claim_job(remote, partitions):
                 
             except FileExistsError:
                 # We couldn't claim this partition, so try the next one.
-                print('Already claimed: {}:{}; moving on...'.format(
-                    os.path.basename(partition[0]), os.path.basename(partition[-1])))
+                #print('Already claimed: {}:{}; moving on...'.format(
+                #    os.path.basename(partition[0]), os.path.basename(partition[-1])))
                 continue
     
     # There are no more jobs.
     return None, None
 
-def run_job(idx, frames, resolution, style, remote, local, put_thread):
+def run_job(idx, frames, resolution, style, remote, flow, local, put_thread):
     # Copy the relevant files into a local directory.
     # This is not efficient, but it makes working with the Torch script easier.
     processing = local / 'partition_{}'.format(idx)
-    # Get a list of the indices of the frames we're manipulating.
-    idys = list(map(int, [re.findall(r'\d+', os.path.basename(frame))[0] for frame in frames]))
     common.makedirs(processing)
-    for idy, frame in enumerate(frames):
-        newname = str(processing / (FRAME_NAME % (idy + 1)))
+    
+    # Get a list of the indices of the frames we're manipulating.
+    idys = sorted(list(map(int, [re.findall(r'\d+', os.path.basename(frame))[0] for frame in frames])))
+    
+    # Move all the frames to the processing folder.
+    for frame in frames:
+        newname = str(processing / os.path.basename(frame))
         shutil.copyfile(frame, newname)
 
     # The following are all arguments to be fed into the Torch script.
@@ -64,21 +67,17 @@ def run_job(idx, frames, resolution, style, remote, local, put_thread):
     input_pattern = str('..' / processing / FRAME_NAME)
     
     # The pattern denoting the optical flow images.
-    flow_pattern = str('..' / remote / ('flow_' + resolution) / 'backward_[%d]_{%d}.flo')
+    # FIXME: Make sure that the optical flow files are transferred to the local partition.
+    flow_pattern = str(flow / 'backward_[%d]_{%d}.flo')
     
     # The pattern denoting the consistency images (for handling potential occlusion).
-    occlusions_pattern = str('..' / remote / ('flow_' + resolution) / 'reliable_[%d]_{%d}.pgm')
+    occlusions_pattern = str(flow / 'reliable_[%d]_{%d}.pgm')
     
     # The pattern denoting where and by what name the output PNG images should be deposited.
     output_prefix = str('..' / processing / OUTPUT_PREFIX)
     
-    # We are using the default, slow backend for now.
-    backend = 'nn'
-    use_cudnn = '0'
-    gpu_num = '-1'
-    # TODO: GPU/CUDA support
-    # backend = args.gpu_lib if int(args.gpu_num) > -1 else 'nn'
-    # use_cudnn = '1' if args.gpu_lib == 'cudnn' and int(args.gpu_num) > -1 else '0'
+    # Tell the algorithm to start at the beginning of this cut.
+    continue_with = str(idys[0])
 
     # Run stylization.
     subprocess.run([
@@ -87,14 +86,13 @@ def run_job(idx, frames, resolution, style, remote, local, put_thread):
         '-flow_pattern', flow_pattern,
         '-occlusions_pattern', occlusions_pattern,
         '-output_prefix', output_prefix,
-        '-use_cudnn', use_cudnn,
-        '-gpu', gpu_num,
         '-model_vid', str('..' / style),
-        '-model_img', 'self'
+        '-continue_with', continue_with,
+        '-new_cut', '1'
     ], cwd=str(pathlib.Path(os.getcwd()) / 'core'))
     # print(' '.join(proc.args))
     
-    # Upload the product of stylization to the remote directory every TIMEOUT seconds.
+    # Upload the product of stylization to the remote directory.
     oldnames = sorted([str(processing / fname) for fname in glob.glob1(str(processing), '*.png')])
     newnames = [str(processing / (PREFIX_FORMAT % (idy))) for idy in idys]
     [shutil.move(oldname, newname) for oldname, newname in zip(oldnames, newnames)]
@@ -104,7 +102,7 @@ def run_job(idx, frames, resolution, style, remote, local, put_thread):
     put_thread.append(complete)
     complete.start()
 
-def stylize(resolution, style, partitions, remote, local):
+def stylize(resolution, style, partitions, remote, flow, local):
     # Sort in ascending order of length. This will mitigate the slowest-link effect of any weak nodes.
     partitions = sorted(partitions, key=lambda x: len(x))
     
@@ -114,7 +112,7 @@ def stylize(resolution, style, partitions, remote, local):
     
     while partition is not None:
         # Style transfer is so computationally intense that threading it doesn't yield much time gain.
-        run_job(idx, partition, resolution, style, remote, local, completing)
+        run_job(idx, partition, resolution, style, remote, flow, local, completing)
         idx, partition = claim_job(remote, partitions)
     
     # Join all remaining threads.
