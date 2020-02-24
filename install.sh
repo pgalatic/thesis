@@ -12,10 +12,13 @@ pip3 install -r requirements.txt
 
 # Install the latest Torch
 git clone https://github.com/torch/distro.git ~/torch --recursive
-bash ~/torch/install-deps
-bash ~/torch/install.sh
+cd ~/torch
+
+bash install-deps
+bash install.sh
 
 # Add Torch to PATH
+export PATH=$PATH:~/torch/install/bin/
 source ~/.bashrc
 source ~/.profile
 
@@ -26,7 +29,9 @@ luarocks install image
 luarocks install lua-cjson
 
 # Update torch AFTER installing packages (otherwise, hidden bugs will cause bad output)
-bash ~/torch/update.sh
+bash update.sh
+
+cd -
 
 # Download models
 bash styles/_download_models.sh

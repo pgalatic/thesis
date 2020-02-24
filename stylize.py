@@ -9,6 +9,7 @@ import pdb
 import glob
 import time
 import shutil
+import logging
 import pathlib
 import platform
 import threading
@@ -33,15 +34,15 @@ def claim_job(remote, partitions):
                 with open(placeholder, 'x') as handle:
                     handle.write('PLACEHOLDER CREATED BY {name}'.format(name=platform.node()))
                 
-                print('Partition claimed: {}:{}'.format(
+                logging.info('Partition claimed: {}:{}'.format(
                     os.path.basename(partition[0]), os.path.basename(partition[-1])))
                 
                 return idx, partition
                 
             except FileExistsError:
                 # We couldn't claim this partition, so try the next one.
-                #print('Already claimed: {}:{}; moving on...'.format(
-                #    os.path.basename(partition[0]), os.path.basename(partition[-1])))
+                logging.debug('Already claimed: {}:{}; moving on...'.format(
+                    os.path.basename(partition[0]), os.path.basename(partition[-1])))
                 continue
     
     # There are no more jobs.
@@ -80,7 +81,7 @@ def run_job(idx, frames, resolution, style, remote, flow, local, put_thread):
     continue_with = str(idys[0])
 
     # Run stylization.
-    subprocess.run([
+    proc = subprocess.run([
         'th', 'fast_artistic_video.lua',
         '-input_pattern', input_pattern,
         '-flow_pattern', flow_pattern,
@@ -90,21 +91,22 @@ def run_job(idx, frames, resolution, style, remote, flow, local, put_thread):
         '-continue_with', continue_with,
         '-new_cut', '1'
     ], cwd=str(pathlib.Path(os.getcwd()) / 'core'))
-    # print(' '.join(proc.args))
+    logging.debug(' '.join(proc.args))
     
     # Upload the product of stylization to the remote directory.
     oldnames = sorted([str(processing / fname) for fname in glob.glob1(str(processing), '*.png')])
     newnames = [str(processing / (PREFIX_FORMAT % (idy))) for idy in idys]
     [shutil.move(oldname, newname) for oldname, newname in zip(oldnames, newnames)]
     
-    print('Uploading {} files...'.format(len(newnames)))
+    logging.info('Uploading {} files...'.format(len(newnames)))
     complete = threading.Thread(target=common.upload_files, args=(newnames, remote))
     put_thread.append(complete)
     complete.start()
 
 def stylize(resolution, style, partitions, remote, flow, local):
     # Sort in ascending order of length. This will mitigate the slowest-link effect of any weak nodes.
-    partitions = sorted(partitions, key=lambda x: len(x))
+    # Sort in descending order of length. This will mitigate the slowdown caused by very large partitions.
+    partitions = sorted(partitions, key=lambda x: len(x), reverse=True)
     
     running = []
     completing = []
@@ -116,7 +118,7 @@ def stylize(resolution, style, partitions, remote, flow, local):
         idx, partition = claim_job(remote, partitions)
     
     # Join all remaining threads.
-    print('Wrapping up threads...')
+    logging.info('Wrapping up threads for stylization...')
     for thread in completing:
         thread.join()
         

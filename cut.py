@@ -8,6 +8,7 @@ import csv
 import pdb
 import sys
 import glob
+import logging
 import pathlib
 import argparse
 from statistics import mean
@@ -66,6 +67,12 @@ def get_dists(frames, dist_func):
     # Sort in descending order by the distance between frames.
     return sorted(dists, key=lambda x: x[-1], reverse=True)
 
+def assess_partitions(partitions):
+    assert(len(partitions) == len(keys) + 1)
+
+    logging.info('Number of partitions: {}'.format(len(partitions)))
+    logging.info('Average partition length: {}'.format(mean([len(partition) for partition in partitions])))
+
 def divide(frames, write_to=None):
     distpairs = get_dists(frames, kl_dist) # Change the second parameter to change the distance metric.
     # Ignore any distances that aren't significantly above the average as defined by MIN_DIST_FACTOR.
@@ -90,15 +97,12 @@ def divide(frames, write_to=None):
             wtr = csv.writer(f)
             for key in keys:
                 wtr.writerow([key])
-        print('...Wrote keys to {}.'.format(write_to))
+        logging.info('...Wrote keys to {}.'.format(write_to))
     
     # Partitions are a list of lists of frame filenames.
     partitions = [frames[idx:idy] for idx, idy in zip([0] + keys, keys + [None])]
     
-    assert(len(partitions) == len(keys) + 1)
-    
-    print('Number of partitions: {}'.format(len(partitions)))
-    print('Average partition length: {}'.format(mean([len(partition) for partition in partitions])))
+    assess_partitions(partitions)
     
     return partitions
 
@@ -108,10 +112,7 @@ def read_cuts(fname, frames):
         keys = sorted([int(row[0]) for row in rdr])
         partitions = [frames[idx:idy] for idx, idy in zip([0] + keys, keys + [None])]
     
-    assert(len(partitions) == len(keys) + 1)
-    
-    print('Number of partitions: {}'.format(len(partitions)))
-    print('Average partition length: {}'.format(mean([len(partition) for partition in partitions])))
+    assess_partitions(partitions)
     
     return partitions
 

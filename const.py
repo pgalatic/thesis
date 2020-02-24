@@ -3,6 +3,10 @@
 # Stores constants for the program.
 #
 
+# The name of the file in which logs are stored, and the format of displaying messages.
+LOGFILE = 'thesis.log'
+LOGFORMAT = '%(asctime)s %(name)s:%(levelname)s -- %(message)s'
+
 # The format name to properly split frames.
 FRAME_NAME = 'frame_%05d.ppm'
 

@@ -9,7 +9,9 @@ import os
 import pdb
 import sys
 import glob
+import time
 import shutil
+import logging
 import pathlib
 import argparse
 import threading
@@ -63,7 +65,11 @@ def parse_args():
 
 def main():
     '''Driver program.'''
+    t_start = time.time()
     args = parse_args()
+    logging.basicConfig(filename=LOGFILE, filemode='a', format=LOGFORMAT, level=logging.INFO)
+    logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+    logging.info('\n-----START-----')
     
     # Make output folder(s), if necessary
     remote = pathlib.Path(args.remote) / os.path.basename(os.path.splitext(args.video)[0])
@@ -80,8 +86,9 @@ def main():
         # Only upload if strictly necessary.
         if not os.path.exists(args.video):
             common.upload_files([args.local_video], args.video, absolute_path=True)
-        shutil.copyfile(args.local_video, str(reel))
-    else:
+        if not os.path.exists(str(reel)):
+            shutil.copyfile(args.local_video, str(reel))
+    elif not os.path.exists(str(reel)):
         common.wait_for(args.video)
         shutil.copyfile(args.video, str(reel))
     
@@ -89,8 +96,9 @@ def main():
         # Only upload if strictly necessary.
         if not os.path.exists(args.style):
             common.upload_files([args.local_style], args.style, absolute_path=True)
-        shutil.copyfile(args.local_style, str(model))
-    else:
+        if not os.path.exists(str(model)):
+            shutil.copyfile(args.local_style, str(model))
+    elif not os.path.exists(str(model)):
         common.wait_for(args.style)
         shutil.copyfile(args.style, str(model))
     
@@ -101,7 +109,11 @@ def main():
     if args.test:
         num_frames = NUM_FRAMES_FOR_TEST
         frames = frames[:NUM_FRAMES_FOR_TEST]
-            
+    
+    # Record the time between the start of the program and preliminary setup.
+    t_prelim = time.time()
+    logging.info('{} seconds\tpreliminary setup'.format(round(t_prelim - t_start, 3)))
+    
     # Spawn a thread for optical flow calculation.
     optflow_thread = threading.Thread(target=optflow.optflow,
         args=(args.resolution, args.downsamp_factor, num_frames, remote, flow, local))
@@ -122,8 +134,17 @@ def main():
     # As a result, we have to join the thread in order to perform stylization.
     optflow_thread.join()
     
+    # Record the time between the preliminary setup and optflow calculations.
+    # Calculating the frames is rolled into this, but that is so quick proportional to the video size that we can essentially ignore it.
+    t_optflow = time.time()
+    logging.info('{} seconds\toptical flow calculations'.format(round(t_optflow - t_prelim, 3)))
+    
     # Compute neural style transfer.
     stylize.stylize(args.resolution, model, partitions, remote, flow, local)
+    
+    # Record the time between the optflow calculations and completing stylization.
+    t_stylize = time.time()
+    logging.info('{} seconds\tstylization'.format(round(t_stylize - t_prelim, 3)))
     
     # Combining frames into a final video won't work if we're testing on only a portion of the frames.
     if not args.test:
@@ -132,6 +153,17 @@ def main():
     # Clean up any lingering files.
     if os.path.exists(DIVIDE_TAG):
         os.remove(DIVIDE_TAG)
+    
+    # Log all the times for good measure.
+    t_end = time.time()
+    logging.info('====TIMES====')
+    logging.info('{} seconds\tpreliminary setup'.format(round(t_prelim - t_start, 3)))
+    logging.info('{} seconds\toptical flow calculations'.format(round(t_optflow - t_prelim, 3)))
+    logging.info('{} seconds\tstylization'.format(round(t_stylize - t_prelim, 3)))
+    logging.info('{} seconds\twrapping up'.format(round(t_end - t_stylize, 3)))
+    logging.info('{} seconds\tTOTAL'.format(round(t_end - t_start, 3)))
+    logging.info('=============')
+    logging.info('\n------END-----\n')
 
 if __name__ == '__main__':
     main()

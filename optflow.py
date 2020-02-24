@@ -9,6 +9,7 @@ import sys
 import pdb
 import glob
 import time
+import logging
 import platform
 import threading
 import subprocess
@@ -49,7 +50,7 @@ def claim_job(remote, flow, local, resolution, num_frames):
             with open(placeholder, 'x') as handle:
                 handle.write('PLACEHOLDER CREATED BY {name}'.format(name=platform.node()))
             
-            # print('Job claimed: {}'.format(next_job))
+            logging.debug('Job claimed: {}'.format(next_job))
             return next_job
         except FileExistsError:
             # We couldn't claim that job, so try the next one.
@@ -60,9 +61,9 @@ def claim_job(remote, flow, local, resolution, num_frames):
 
 def run_job(job, flow, local, downsamp_factor, put_thread):
     if job == None or job < 0:
-        raise Exception('Bad job passed to run_job: {job}'.format(job=job))
+        raise Exception('Bad job passed to run_job: {}'.format(job))
     
-    print('\nComputing optical flow for job {job}.'.format(job=job))
+    logging.info('\nComputing optical flow for job {}.'.format(job))
     
     start_local = str(local / (FRAME_NAME % job))
     end_local = str(local / (FRAME_NAME % (job + 1)))
@@ -72,7 +73,7 @@ def run_job(job, flow, local, downsamp_factor, put_thread):
     reliable_backward = str(local / 'reliable_{j}_{i}.pgm'.format(i=job, j=job+1))
         
     # Compute forward optical flow.
-    # print('\nComputing forward optical flow for job {job}.'.format(job=job))
+    logging.debug('Job {}: Forward optical flow'.format(job))
     forward_dm = subprocess.Popen([
         './core/deepmatching-static', start_local, end_local, '-nt', '0', '-downscale', downsamp_factor
     ], stdout=subprocess.PIPE)
@@ -81,7 +82,7 @@ def run_job(job, flow, local, downsamp_factor, put_thread):
     ], stdin=forward_dm.stdout)
     
     # Compute backward optical flow.
-    # print('Computing backward optical flow for job {job}.'.format(job=job))
+    logging.debug('Job {}: Backward optical flow'.format(job))
     backward_dm = subprocess.Popen([
         './core/deepmatching-static', end_local, start_local, '-nt', '0', '-downscale', downsamp_factor, '|',
     ], stdout=subprocess.PIPE)
@@ -90,20 +91,19 @@ def run_job(job, flow, local, downsamp_factor, put_thread):
     ], stdin=backward_dm.stdout)
     
     # Compute consistency check for forwards optical flow. This might not be necessary?
-    # print('Computing consistency check for forwards optical flow.')
     #con1 = subprocess.Popen([
     #    './core/consistencyChecker/consistencyChecker',
     #    forward_name, backward_name, reliable_forward, start_local
     #])
     
     # Compute consistency check for backwards optical flow.
-    # print('Computing consistency check for backwards optical flow.')
+    logging.debug('Job {}: Consistency check.'.format(job))
     con2 = subprocess.Popen([
         './core/consistencyChecker/consistencyChecker',
         backward_name, forward_name, reliable_backward, end_local
     ])
     
-    con1.wait()
+    #con1.wait()
     con2.wait()
     
     # Spawn a thread to put the produced files in the remote directory.
@@ -111,13 +111,13 @@ def run_job(job, flow, local, downsamp_factor, put_thread):
     # TODO: Look at thread pools.
     # TODO: Assess time taken in various section of program (threads vs. bash commands?)
     # TODO: Determine which bash commands can be executed in parallel.
-    fnames = [forward_name, backward_name, reliable_forward, reliable_backward]
+    fnames = [forward_name, backward_name, reliable_backward]
     complete = threading.Thread(target=common.upload_files, args=(fnames, flow))
     put_thread.append(complete)
     complete.start()
 
 def optflow(resolution, downsamp_factor, num_frames, remote, flow, local): 
-    print('Starting optical flow calculations...')
+    logging.info('Starting optical flow calculations...')
         
     # Get a job! We need our first job before we can start threading.
     job = claim_job(remote, flow, local, resolution, num_frames)
@@ -141,10 +141,10 @@ def optflow(resolution, downsamp_factor, num_frames, remote, flow, local):
     # for fname in files: os.remove(flow / fname)
     
     # Join all remaining threads.
-    print('Wrapping up threads...')
+    logging.info('Wrapping up threads for optical flow calculation...')
     for thread in running:
         thread.join()
     for thread in completing:
         thread.join()
 
-    print('...optical flow calculations are finished.')
+    logging.info('...optical flow calculations are finished.')

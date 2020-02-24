@@ -75,7 +75,7 @@ local function getFormatedFlowFileName(pattern, fromIndex, toIndex)
     function(a) return string.format(a, fromIndex) end )
   flowFileName = string.gsub(flowFileName, '%[(.-)%]',
     function(a) return string.format(a, toIndex) end )
-  print('Retrieved flowfile ' .. flowFileName)
+  -- print('Retrieved flowfile ' .. flowFileName)
   return flowFileName
 end
 

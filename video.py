@@ -42,6 +42,8 @@ def parse_args():
         help='The video processer to use, either ffmpeg (preferred) or avconv (untested) [ffmpeg].')
     ap.add_argument('--resolution', type=str, nargs='?', default=RESOLUTION_DEFAULT,
         help='The width to process the video at in the format w:h [Original resolution].')
+    ap.add_argument('--lossless', action='store_true',
+        help='Set in order to use a lossless video encoding, which will create an extremely large video file.')
     
     return ap.parse_args()
 
@@ -80,47 +82,42 @@ def split_frames(processor, resolution, reel, local, extension='.ppm'):
     # Return the number of frames.
     return len(glob.glob1(str(local), '*.ppm'))
 
-def combine_frames(processor, reel, remote, local):
+def combine_frames(processor, reel, src, dst, extension='.avi', lossless=False):
     # Preliminary operations to make sure that the environment is set up properly.
     check_deps(processor)
 
-    # Get the stylized frames from remote and move them to local for ease of processing.
-    fnames = glob.glob1(str(remote), '*.png.')
-    oldnames = [str(remote / name) for name in fnames]
-    newnames = [str(local / name) for name in fnames]
-    
-    for oldname, newname in zip(oldnames, newnames):
-        shutil.copyfile(oldname, newname)
-
     # Get the original video's length. This will be necessary to properly reconstruct it.
-    probe = ffprobe3.FFProbe(reel)
+    probe = ffprobe3.FFProbe(str(reel))
     duration = probe.streams[-1].duration
     num_frames = str(probe.streams[0].nb_frames)
     
-    stylized = str(local / ('stylized_' + os.path.basename(reel)))
-    stylized_audio = str(local / ('stylized_audio_' + os.path.basename(reel)))
-    stylized_final = str(local / ('stylized_final_' + os.path.basename(reel)))
+    basename = os.path.splitext(os.path.basename(reel))[0]
     
     # Combine stylized frames into video.
-    subprocess.run([
-        processor, '-i', str(local / PREFIX_FORMAT), 
-        '-filter:v', 'setpts={}/{}*N/TB'.format(duration, num_frames),
-        '-r', '{}/{}'.format(num_frames, duration),
-        stylized
-    ])
+    no_audio = str(dst / ('{}_no_audio{}'.format(basename, extension)))
+    audio = str(dst / ('{}_stylized{}'.format(basename, extension)))
     
+    if lossless:
+        subprocess.run([
+            processor, '-i', str(src / PREFIX_FORMAT),
+            '-c:v', 'huffyuv',
+            '-filter:v', 'setpts={}/{}*N/TB'.format(duration, num_frames),
+            '-r', '{}/{}'.format(num_frames, duration),
+            no_audio
+        ])
+    else:
+        subprocess.run([
+            processor, '-i', str(src / PREFIX_FORMAT),
+            '-filter:v', 'setpts={}/{}*N/TB'.format(duration, num_frames),
+            '-r', '{}/{}'.format(num_frames, duration),
+            no_audio
+        ])
+     
     # Add audio to that video.
     subprocess.run([
-        processor, '-i', stylized, '-i', reel,
+        processor, '-i', no_audio, '-i', reel,
         '-c', 'copy', '-map', '0:0', '-map', '1:1',
-        stylized_audio
-    ])
-    
-    # Re-encode so that the video is accessible on more platforms (otherwise, it will be corrupted when played in Google Chrome).
-    subprocess.run([
-        processor, '-i', stylized_audio,
-        '-pix_fmt', 'yuv420p',
-        stylized_final
+        audio
     ])
 
 def main():
@@ -137,7 +134,7 @@ def main():
     elif args.mode == 'c' or args.mode == 'combine':
         if not args.src:
             sys.exit('Please specify a source directory.')
-        combine_frames(args.processor, args.reel, pathlib.Path(args.src), dst)
+        combine_frames(args.processor, args.reel, pathlib.Path(args.src), dst, lossless=args.lossless)
     else:
         sys.exit('Mode {} not recognized; please try again.'.format(args.mode))
 

@@ -9,10 +9,10 @@ import pdb
 import sys
 import time
 import pickle
+import logging
 import pathlib
 import platform
 import threading
-import traceback
 
 # EXTERNAL LIB
 
@@ -28,7 +28,7 @@ def makedirs(dirname):
         except FileExistsError:
             pass # The directory was created just before we tried to create it.
         except PermissionError:
-            print('Directory {} creation failed! Are you sure that the common folder is accessible/mounted?'.format(dirname))
+            logging.warning('Directory {} creation failed! Are you sure that the common folder is accessible/mounted?'.format(dirname))
             raise
 
 def wait_complete(tag, target, args, remote):
@@ -59,7 +59,7 @@ def wait_complete(tag, target, args, remote):
         with open(placeholder, 'x') as handle:
             handle.write('PLACEHOLDER CREATED BY {name}'.format(name=platform.node()))
         
-        print('Job claimed: {}'.format(tag))
+        logging.info('Job claimed: {}'.format(tag))
         # Run the function.
         result = target(*args)
         
@@ -70,7 +70,7 @@ def wait_complete(tag, target, args, remote):
         return result
     except FileExistsError:
         # We couldn't claim that job, so WAIT until it's finished, then return None.
-        print('Job {} already claimed; waiting for output...'.format(tag))
+        logging.info('Job {} already claimed; waiting for output...'.format(tag))
         # Until the placeholder is gone, the file may still be incompletely uploaded.
         while os.path.exists(placeholder):
             time.sleep(1)
@@ -102,7 +102,7 @@ def upload_files(fnames, dst, absolute_path=False):
     running = []
     
     for fname in fnames:
-        # print('\nUploading {}...'.format(fname))
+        # logging.info('\nUploading {}...'.format(fname))
         # This function should handle both PosixPath as well as string destinations.
         if absolute_path:
             newname = dst
@@ -126,11 +126,10 @@ def upload_files(fnames, dst, absolute_path=False):
             os.rename(partname, newname)
         except FileExistsError:
             # Try to upload the next file.
-            print('\nFailed uploading -- file {} already exists!'.format(fname))
+            logging.warning('\nFailed uploading -- file {} already exists!'.format(fname))
         except OSError:
             # The file path specified is incorrect, or there was another error.
-            print('\nFailed uploading {} -- OSError!'.format(fname))
-            traceback.print_exc()
+            logging.error('\nFailed uploading {} -- OSError!'.format(fname), exc_info=True)
         finally:
             if os.path.exists(partname):
                 os.remove(partname)
@@ -140,7 +139,7 @@ def wait_for(fname):
     WAIT until a file exists.
     '''
     # If you wish upon a star...
-    print('Waiting for {}...'.format(fname))
+    logging.info('Waiting for {}...'.format(fname))
     while not os.path.exists(fname):
         time.sleep(1)
-    print('...{} found!'.format(fname))
+    logging.info('...{} found!'.format(fname))
