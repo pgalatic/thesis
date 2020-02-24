@@ -11,7 +11,7 @@ import glob
 import logging
 import pathlib
 import argparse
-from statistics import mean
+import statistics
 
 # EXTERNAL LIB
 import numpy as np
@@ -68,8 +68,10 @@ def get_dists(frames, dist_func):
     return sorted(dists, key=lambda x: x[-1], reverse=True)
 
 def assess_partitions(partitions):
-    logging.info('Number of partitions: {}'.format(len(partitions)))
-    logging.info('Average partition length: {}'.format(mean([len(partition) for partition in partitions])))
+    lengths = [len(partition) for partition in partitions]
+    logging.info('{}\t# of partitions'.format(len(partitions)))
+    logging.info('{}\tmean of partition length'.format(statistics.mean(lengths)))
+    logging.info('{}\tstd of partition length'.format(statistics.stdev(lengths)))
 
 def divide(frames, write_to=None):
     distpairs = get_dists(frames, kl_dist) # Change the second parameter to change the distance metric.
