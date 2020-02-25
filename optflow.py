@@ -63,7 +63,7 @@ def run_job(job, remote, local, downsamp_factor, put_thread):
     if job == None or job < 0:
         raise Exception('Bad job passed to run_job: {}'.format(job))
     
-    logging.info('\nComputing optical flow for job {}.'.format(job))
+    logging.info('Computing optical flow for job {}.'.format(job))
     
     start_local = str(local / (FRAME_NAME % job))
     end_local = str(local / (FRAME_NAME % (job + 1)))

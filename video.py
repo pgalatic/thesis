@@ -9,6 +9,7 @@ import sys
 import glob
 import time
 import shutil
+import logging
 import pathlib
 import argparse
 import threading
@@ -74,7 +75,9 @@ def split_frames(processor, reel, local, extension='.ppm'):
     # threading.Thread(target=common.upload_frames...
     
     # Return the number of frames.
-    return len(glob.glob1(str(local), '*.ppm'))
+    num_frames = len(glob.glob1(str(local), '*.ppm'))
+    logging.info('{}\tframes to process')
+    return num_frames
 
 def combine_frames(processor, reel, src, dst, extension='.avi', lossless=False):
     # Preliminary operations to make sure that the environment is set up properly.
