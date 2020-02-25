@@ -20,21 +20,21 @@ import subprocess
 import common
 from const import *
 
-def most_recent_optflo(flow, resolution):
+def most_recent_optflo(remote):
     # Check to see if the optical flow folder exists.
-    if not os.path.isdir(str(flow)):
+    if not os.path.isdir(str(remote)):
         # If it doesn't exist, then there are no optflow files, and we start from scratch.
         return 1
 
     # The most recent frame is the most recent placeholder plus 1.
-    placeholders = glob.glob1(str(flow), '*.plc')
+    placeholders = glob.glob1(str(remote), '*.plc')
     if len(placeholders) == 0: return 1
     
     return max(map(int, [re.findall(r'\d+', plc)[0] for plc in placeholders])) + 1
 
-def claim_job(remote, flow, local, resolution, num_frames):
+def claim_job(remote, local, num_frames):
     # Check the most recent available job.
-    next_job = most_recent_optflo(flow, resolution)
+    next_job = most_recent_optflo(remote)
     
     # In order for an optflow job to be possible, there needs to be a valid pair of frames.
     if next_job >= num_frames:
@@ -44,7 +44,7 @@ def claim_job(remote, flow, local, resolution, num_frames):
     while next_job < num_frames:
         
         # Try to create a placeholder.
-        placeholder = str(flow / (os.path.splitext(FRAME_NAME)[0] % next_job + '.plc'))
+        placeholder = str(remote / (os.path.splitext(FRAME_NAME)[0] % next_job + '.plc'))
         try:
             # This will only succeed if this program successfully created the placeholder.
             with open(placeholder, 'x') as handle:
@@ -59,7 +59,7 @@ def claim_job(remote, flow, local, resolution, num_frames):
     # There are no more jobs.
     return None
 
-def run_job(job, flow, local, downsamp_factor, put_thread):
+def run_job(job, remote, local, downsamp_factor, put_thread):
     if job == None or job < 0:
         raise Exception('Bad job passed to run_job: {}'.format(job))
     
@@ -112,21 +112,21 @@ def run_job(job, flow, local, downsamp_factor, put_thread):
     # TODO: Assess time taken in various section of program (threads vs. bash commands?)
     # TODO: Determine which bash commands can be executed in parallel.
     fnames = [forward_name, backward_name, reliable_backward]
-    complete = threading.Thread(target=common.upload_files, args=(fnames, flow))
+    complete = threading.Thread(target=common.upload_files, args=(fnames, remote))
     put_thread.append(complete)
     complete.start()
 
-def optflow(resolution, downsamp_factor, num_frames, remote, flow, local): 
+def optflow(downsamp_factor, num_frames, remote, local): 
     logging.info('Starting optical flow calculations...')
         
     # Get a job! We need our first job before we can start threading.
-    job = claim_job(remote, flow, local, resolution, num_frames)
+    job = claim_job(remote, local, num_frames)
     running = []
     completing = []
     while job is not None:
         # Spawn a thread to complete that job, then get the next one.
         running.append(threading.Thread(target=run_job, 
-            args=(job, flow, local, downsamp_factor, completing)))
+            args=(job, remote, local, downsamp_factor, completing)))
         running[-1].start()
         
         # If there isn't room in the jobs list, wait for a thread to finish.
@@ -134,11 +134,11 @@ def optflow(resolution, downsamp_factor, num_frames, remote, flow, local):
             running = [thread for thread in running if thread.isAlive()]
             time.sleep(1)
         
-        job = claim_job(remote, flow, local, resolution, num_frames)
+        job = claim_job(remote, local, num_frames)
             
     # Uncomment these two lines to discard placeholders when optical flow calculations are finished.
-    # files = glob.glob1(flow, '*.plc')
-    # for fname in files: os.remove(flow / fname)
+    # files = glob.glob1(str(remote), '*.plc')
+    # for fname in files: os.remove(str(remote / fname))
     
     # Join all remaining threads.
     logging.info('Wrapping up threads for optical flow calculation...')

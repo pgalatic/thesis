@@ -50,8 +50,6 @@ def parse_args():
         help='Same as --local_video, but for the model used for feed-forward stylization [None].')
     ap.add_argument('--processor', type=str, nargs='?', default='ffmpeg',
         help='The video processer to use, either ffmpeg (preferred) or avconv (untested) [ffmpeg].')
-    ap.add_argument('--resolution', type=str, nargs='?', default=RESOLUTION_DEFAULT,
-        help='The width to process the video at in the format w:h [Original resolution].')
     ap.add_argument('--downsamp_factor', type=str, nargs='?', default='2',
         help='The downsampling factor for optical flow calculations. Increase this slightly if said calculations are too slow or memory-intense for your machine [2].')    
     ap.add_argument('--no_cuts', action='store_true',
@@ -74,8 +72,6 @@ def main():
     # Make output folder(s), if necessary
     remote = pathlib.Path(args.remote) / os.path.basename(os.path.splitext(args.video)[0])
     common.makedirs(remote)
-    flow = remote / ('flow_' + args.resolution + '/')
-    common.makedirs(flow)
     local = pathlib.Path(args.local) / os.path.basename(os.path.splitext(args.video)[0])
     common.makedirs(local)
     reel = local / os.path.basename(args.video)
@@ -102,8 +98,8 @@ def main():
         common.wait_for(args.style)
         shutil.copyfile(args.style, str(model))
     
+    num_frames = video.split_frames(args.processor, reel, local)
     # Split video into individual frames
-    num_frames = video.split_frames(args.processor, args.resolution, reel, local)
     frames = sorted([str(local / frame) for frame in glob.glob1(str(local), '*.ppm')])
     
     if args.test:
@@ -116,7 +112,7 @@ def main():
     
     # Spawn a thread for optical flow calculation.
     optflow_thread = threading.Thread(target=optflow.optflow,
-        args=(args.resolution, args.downsamp_factor, num_frames, remote, flow, local))
+        args=(args.downsamp_factor, num_frames, remote, local))
     optflow_thread.start()
     
     # Either read the cuts from disk or compute them manually (if applicable).
@@ -140,7 +136,7 @@ def main():
     logging.info('{} seconds\toptical flow calculations'.format(round(t_optflow - t_prelim, 3)))
     
     # Compute neural style transfer.
-    stylize.stylize(args.resolution, model, partitions, remote, flow, local)
+    stylize.stylize(model, partitions, remote, local)
     
     # Record the time between the optflow calculations and completing stylization.
     t_stylize = time.time()
@@ -165,5 +161,5 @@ def main():
     logging.info('=============')
     logging.info('\n------END-----\n')
 
-if __name__ == '__main__':
+if __name__ == '__main__':  
     main()

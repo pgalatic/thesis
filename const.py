@@ -10,10 +10,6 @@ LOGFORMAT = '%(asctime)s %(name)s:%(levelname)s -- %(message)s'
 # The format name to properly split frames.
 FRAME_NAME = 'frame_%05d.ppm'
 
-# The default resolution keyword, for videos that should be stylized at the 
-# same resolution as their original resolution.
-RESOLUTION_DEFAULT = 'default'
-
 # When testing the algorithm, it is not immediately necessary to test it on a
 # full video; instead, it can be tested with the first few frames of a video.
 NUM_FRAMES_FOR_TEST = 5

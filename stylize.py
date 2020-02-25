@@ -48,7 +48,7 @@ def claim_job(remote, partitions):
     # There are no more jobs.
     return None, None
 
-def run_job(idx, frames, resolution, style, remote, flow, local, put_thread):
+def run_job(idx, frames, style, remote, local, put_thread):
     # Copy the relevant files into a local directory.
     # This is not efficient, but it makes working with the Torch script easier.
     processing = local / 'partition_{}'.format(idx)
@@ -69,10 +69,10 @@ def run_job(idx, frames, resolution, style, remote, flow, local, put_thread):
     
     # The pattern denoting the optical flow images.
     # FIXME: Make sure that the optical flow files are transferred to the local partition.
-    flow_pattern = str(flow / 'backward_[%d]_{%d}.flo')
+    flow_pattern = str(remote / 'backward_[%d]_{%d}.flo')
     
     # The pattern denoting the consistency images (for handling potential occlusion).
-    occlusions_pattern = str(flow / 'reliable_[%d]_{%d}.pgm')
+    occlusions_pattern = str(remote / 'reliable_[%d]_{%d}.pgm')
     
     # The pattern denoting where and by what name the output PNG images should be deposited.
     output_prefix = str('..' / processing / OUTPUT_PREFIX)
@@ -103,7 +103,7 @@ def run_job(idx, frames, resolution, style, remote, flow, local, put_thread):
     put_thread.append(complete)
     complete.start()
 
-def stylize(resolution, style, partitions, remote, flow, local):
+def stylize( style, partitions, remote, local):
     # Sort in ascending order of length. This will mitigate the slowest-link effect of any weak nodes.
     # Sort in descending order of length. This will mitigate the slowdown caused by very large partitions.
     partitions = sorted(partitions, key=lambda x: len(x), reverse=True)
@@ -114,7 +114,7 @@ def stylize(resolution, style, partitions, remote, flow, local):
     
     while partition is not None:
         # Style transfer is so computationally intense that threading it doesn't yield much time gain.
-        run_job(idx, partition, resolution, style, remote, flow, local, completing)
+        run_job(idx, partition, style, remote, local, completing)
         idx, partition = claim_job(remote, partitions)
     
     # Join all remaining threads.

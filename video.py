@@ -40,8 +40,6 @@ def parse_args():
         help='The extension used for the frames of a split video. If performing manual cuts, set this to .png [.ppm].')
     ap.add_argument('--processor', type=str, nargs='?', default='ffmpeg',
         help='The video processer to use, either ffmpeg (preferred) or avconv (untested) [ffmpeg].')
-    ap.add_argument('--resolution', type=str, nargs='?', default=RESOLUTION_DEFAULT,
-        help='The width to process the video at in the format w:h [Original resolution].')
     ap.add_argument('--lossless', action='store_true',
         help='Set in order to use a lossless video encoding, which will create an extremely large video file.')
     
@@ -58,7 +56,7 @@ def check_deps(processor):
         subprocess.Popen(['chmod', '+x', 'core/deepmatching-static'])
         subprocess.Popen(['chmod', '+x', 'core/deepflow2-static'])
 
-def split_frames(processor, resolution, reel, local, extension='.ppm'):
+def split_frames(processor, reel, local, extension='.ppm'):
     # Preliminary operations to make sure that the environment is set up properly.
     check_deps(processor)
 
@@ -67,11 +65,7 @@ def split_frames(processor, resolution, reel, local, extension='.ppm'):
     if not os.path.isfile(str(local / 'frame_00001{}'.format(extension))):
         # This line is to account for extensions other than the default.
         frame_name = os.path.splitext(FRAME_NAME)[0] + extension
-        if resolution == RESOLUTION_DEFAULT:
-            proc = subprocess.Popen([processor, '-i', str(reel), str(local / frame_name)])
-        else:
-            proc = subprocess.Popen([processor, '-i', str(reel), '-vf', 'scale=' + resolution, 
-                str(local / frame_name)])
+        proc = subprocess.Popen([processor, '-i', str(reel), str(local / frame_name)])
     
         # Wait until splitting the frames is finished, so we know how many there are.
         proc.wait()
@@ -130,7 +124,7 @@ def main():
     common.makedirs(dst)
 
     if args.mode == 's' or args.mode == 'split':
-        split_frames(args.processor, args.resolution, args.reel, dst, args.extension)
+        split_frames(args.processor, args.reel, dst, args.extension)
     elif args.mode == 'c' or args.mode == 'combine':
         if not args.src:
             sys.exit('Please specify a source directory.')
