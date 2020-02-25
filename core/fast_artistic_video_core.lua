@@ -189,12 +189,18 @@ function run_fast_neural_video(opt, func_load_image, func_load_cert, func_eval, 
   local start_idx = opt.backward and opt.num_frames-1 or opt.continue_with
   local end_idx = opt.backward and 1 or opt.num_frames
   local inc = opt.backward and -1 or 1
+  
+  print("Stylization start: " .. start_idx)
+  print("Stylization end: " .. end_idx)
 
   -- Main loop over all frames
   for i=start_idx, end_idx, inc do
 
     img = func_load_image(opt, i, dtype)
-    if img == nil then break end
+    if img == nil then
+      print("Program ending because image not found: " .. i)
+      break
+    end
     local H, W = img:size(2), img:size(3)
 
     local next_img_stylized

@@ -6,7 +6,6 @@
 import os
 import pdb
 import sys
-import glob
 import time
 import shutil
 import logging
@@ -61,21 +60,26 @@ def split_frames(processor, reel, local, extension='.ppm'):
     # Preliminary operations to make sure that the environment is set up properly.
     check_deps(processor)
 
-    # Split video into a collection of frames. It's necessary to have a local copy of the frames.
+    # Split video into a collection of frames. 
+    # Having a local copy of the frames is preferred if working with a remote server.
     # Don't split the video if we've already done so.
-    if not os.path.isfile(str(local / 'frame_00001{}'.format(extension))):
-        # This line is to account for extensions other than the default.
-        frame_name = os.path.splitext(FRAME_NAME)[0] + extension
-        proc = subprocess.Popen([processor, '-i', str(reel), str(local / frame_name)])
+    probe = ffprobe3.FFProbe(str(reel))
+    num_frames = str(probe.streams[0].nb_frames)
+    if num_frames == common.count_files(local, extension):
+        return num_frames
     
-        # Wait until splitting the frames is finished, so we know how many there are.
-        proc.wait()
+    # This line is to account for extensions other than the default.
+    frame_name = os.path.splitext(FRAME_NAME)[0] + extension
+    proc = subprocess.Popen([processor, '-i', str(reel), str(local / frame_name)])
+
+    # Wait until splitting the frames is finished, so we know how many there are.
+    proc.wait()
     
     # Spawn a thread to upload the files to the common area (is this necessary?).
     # threading.Thread(target=common.upload_frames...
     
     # Return the number of frames.
-    num_frames = len(glob.glob1(str(local), '*.ppm'))
+    num_frames = common.count_files(local, extension)
     logging.info('{}\tframes to process'.format(num_frames))
     return num_frames
 

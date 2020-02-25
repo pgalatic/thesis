@@ -38,7 +38,10 @@ def claim_job(remote, local, num_frames):
     
     # In order for an optflow job to be possible, there needs to be a valid pair of frames.
     if next_job >= num_frames:
-        return None
+        # Check to see if there are any more frames in the time since we began optflow calculations.
+        num_frames = common.count_files(local, '.ppm')
+        if next_job >= num_frames:
+            return None
     
     # Loop while there may yet still be jobs to do.
     while next_job < num_frames:
@@ -123,6 +126,8 @@ def optflow(downsamp_factor, num_frames, remote, local):
     job = claim_job(remote, local, num_frames)
     running = []
     completing = []
+    
+    # FIXME: If optflow starts before the frames are entirely split, then the program will end early.
     while job is not None:
         # Spawn a thread to complete that job, then get the next one.
         running.append(threading.Thread(target=run_job, 

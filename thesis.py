@@ -102,9 +102,13 @@ def main():
     # Split video into individual frames
     frames = sorted([str(local / frame) for frame in glob.glob1(str(local), '*.ppm')])
     
+    # Make sure we only test on a small number of files, if we are testing.
     if args.test:
         num_frames = NUM_FRAMES_FOR_TEST
+        to_remove = frames[NUM_FRAMES_FOR_TEST:]
         frames = frames[:NUM_FRAMES_FOR_TEST]
+        for frame in to_remove:
+            os.remove(frame)
     
     # Record the time between the start of the program and preliminary setup.
     t_prelim = time.time()

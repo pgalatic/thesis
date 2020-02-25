@@ -7,6 +7,7 @@
 import os
 import pdb
 import sys
+import glob
 import time
 import pickle
 import logging
@@ -30,6 +31,9 @@ def makedirs(dirname):
         except PermissionError:
             logging.warning('Directory {} creation failed! Are you sure that the common folder is accessible/mounted?'.format(dirname))
             raise
+
+def count_files(dir, extension):
+    return len(glob.glob1(str(dir), '*{}'.format(extension)))
 
 def wait_complete(tag, target, args, remote):
     '''
