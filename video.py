@@ -64,9 +64,14 @@ def split_frames(processor, reel, local, extension='.ppm'):
     # Having a local copy of the frames is preferred if working with a remote server.
     # Don't split the video if we've already done so.
     probe = ffprobe3.FFProbe(str(reel))
-    num_frames = str(probe.streams[0].nb_frames)
-    if num_frames == common.count_files(local, extension):
+    num_frames = int(probe.streams[0].nb_frames)
+    files_present = common.count_files(local, extension)
+    if num_frames == files_present:
+        logging.info('Video is already split into {} frames'.format(num_frames))
         return num_frames
+    
+    logging.info('{} frames in video != {} frames on disk; splitting frames...'.format(
+        num_frames, files_present))
     
     # This line is to account for extensions other than the default.
     frame_name = os.path.splitext(FRAME_NAME)[0] + extension
@@ -99,16 +104,18 @@ def combine_frames(processor, reel, src, dst, extension='.avi', lossless=False):
     audio = str(dst / ('{}_stylized{}'.format(basename, extension)))
     
     if lossless:
+        logging.debug('Running lossless compression...')
         subprocess.run([
-            processor, '-i', str(src / PREFIX_FORMAT),
+            processor, '-i', str(src / OUTPUT_FORMAT),
             '-c:v', 'huffyuv',
             '-filter:v', 'setpts={}/{}*N/TB'.format(duration, num_frames),
             '-r', '{}/{}'.format(num_frames, duration),
             no_audio
         ])
     else:
+        logging.debug('Running lossy compression...')
         subprocess.run([
-            processor, '-i', str(src / PREFIX_FORMAT),
+            processor, '-i', str(src / OUTPUT_FORMAT),
             '-filter:v', 'setpts={}/{}*N/TB'.format(duration, num_frames),
             '-r', '{}/{}'.format(num_frames, duration),
             no_audio
