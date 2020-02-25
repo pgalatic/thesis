@@ -76,7 +76,7 @@ def split_frames(processor, reel, local, extension='.ppm'):
     
     # Return the number of frames.
     num_frames = len(glob.glob1(str(local), '*.ppm'))
-    logging.info('{}\tframes to process')
+    logging.info('{}\tframes to process'.format(num_frames))
     return num_frames
 
 def combine_frames(processor, reel, src, dst, extension='.avi', lossless=False):
