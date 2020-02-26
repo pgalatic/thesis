@@ -97,7 +97,7 @@ def combine_frames(processor, reel, src, dst, extension='.avi', lossless=False):
     duration = probe.streams[-1].duration
     num_frames = str(probe.streams[0].nb_frames)
     
-    basename = os.path.splitext(os.path.basename(reel))[0]
+    basename = os.path.splitext(os.path.basename(str(reel)))[0]
     
     # Combine stylized frames into video.
     no_audio = str(dst / ('{}_no_audio{}'.format(basename, extension)))
@@ -106,7 +106,8 @@ def combine_frames(processor, reel, src, dst, extension='.avi', lossless=False):
     if lossless:
         logging.debug('Running lossless compression...')
         subprocess.run([
-            processor, '-i', str(src / OUTPUT_FORMAT),
+            processor, 
+            '-i', str(src / OUTPUT_FORMAT),
             '-c:v', 'huffyuv',
             '-filter:v', 'setpts={}/{}*N/TB'.format(duration, num_frames),
             '-r', '{}/{}'.format(num_frames, duration),
@@ -116,6 +117,7 @@ def combine_frames(processor, reel, src, dst, extension='.avi', lossless=False):
         logging.debug('Running lossy compression...')
         subprocess.run([
             processor, '-i', str(src / OUTPUT_FORMAT),
+            '-c:v', 'libx264', '-preset', 'veryslow',
             '-filter:v', 'setpts={}/{}*N/TB'.format(duration, num_frames),
             '-r', '{}/{}'.format(num_frames, duration),
             no_audio
