@@ -106,12 +106,18 @@ def upload_files(fnames, dst, absolute_path=False):
     running = []
     
     for fname in fnames:
+    
         # logging.info('\nUploading {}...'.format(fname))
         # This function should handle both PosixPath as well as string destinations.
         if absolute_path:
             newname = dst
         else:
             newname = str(pathlib.Path(dst) / os.path.basename(fname))
+            
+        # Only upload if the file doesn't already exist.
+        if os.path.exists(newname):
+            continue
+
         # In case anyone is waiting on a file, "label" it as incomplete.
         partname = newname + '.part'
         try:

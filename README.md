@@ -25,10 +25,10 @@ url          = "http://lmb.informatik.uni-freiburg.de/Publications/2018/RDB18"
 ## Installation
 
 All nodes involved in computation should have the following priors:
+* This respository
 * Ubuntu >= 16.04 (see [WSL](https://docs.microsoft.com/en-us/windows/wsl/install-win10) if using Windows)
 * Python >= 3.5.6
-* A video processing tool like [FFMPEG](https://www.ffmpeg.org/)
-* This respository
+* A video processing tool like [FFMPEG](https://www.ffmpeg.org/) that supports libx264
 
 Once those are installed, run the following two commands on each node to install the rest.
 ```

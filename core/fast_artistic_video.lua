@@ -23,7 +23,7 @@ local cmd = torch.CmdLine()
 -- Main options
 cmd:option('-model_img', 'self')
 cmd:option('-model_vid', 'models/checkpoint-candy-video.t7')
-cmd:option('-num_frames', 65536, 'maximum number of frames to process')
+cmd:option('-num_frames', 99999, 'maximum number of frames to process')
 cmd:option('-continue_with', 1, 'Specify frame at which to resume stylization, if computation was interrupted')
 cmd:option('-new_cut', 0, 'If continuing, ignore previously stylized frames')
 

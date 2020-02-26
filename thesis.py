@@ -42,8 +42,8 @@ def parse_args():
     # Optional arguments
     ap.add_argument('--test', action='store_true',
         help='Test the algorithm by stylizing only a few frames of the video, rather than all of the frames.')
-    ap.add_argument('--local', type=str, nargs='?', default='.',
-        help='The local directory where files will temporarily be stored during processing, to cut down on communication costs over NFS. By defualt, local files will be stored in a folder at the same level of the repository [.].')
+    ap.add_argument('--local', type=str, nargs='?', default='out',
+        help='The local directory where files will temporarily be stored during processing, to cut down on communication costs over NFS. By defualt, local files will be stored in a folder at the same level of the repository [out].')
     ap.add_argument('--local_video', type=str, nargs='?', default=None,
         help='The local path to the stylization target. If this argument is specified, the video will be copied to the remote directory. If left unspecified and the program finds no video of the given name present at the remote directory, the program will wait for another node to upload the video [None].')
     ap.add_argument('--local_style', type=str, nargs='?', default=None,
@@ -79,9 +79,7 @@ def main():
     
     # Upload the video to the remote system, if it was specified, otherwise wait for the video to be uploaded.
     if args.local_video:
-        # Only upload if strictly necessary.
-        if not os.path.exists(args.video):
-            common.upload_files([args.local_video], args.video, absolute_path=True)
+        common.upload_files([args.local_video], args.video, absolute_path=True)
         if not os.path.exists(str(reel)):
             shutil.copyfile(args.local_video, str(reel))
     elif not os.path.exists(str(reel)):
@@ -89,9 +87,7 @@ def main():
         shutil.copyfile(args.video, str(reel))
     
     if args.local_style:
-        # Only upload if strictly necessary.
-        if not os.path.exists(args.style):
-            common.upload_files([args.local_style], args.style, absolute_path=True)
+        common.upload_files([args.local_style], args.style, absolute_path=True)
         if not os.path.exists(str(model)):
             shutil.copyfile(args.local_style, str(model))
     elif not os.path.exists(str(model)):

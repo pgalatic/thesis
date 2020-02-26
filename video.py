@@ -27,7 +27,7 @@ def parse_args():
     
     # Required arguments
     ap.add_argument('mode', type=str,
-        help='Whether or not to split or combine frames. Options: (s)plit, (c)ombine')
+        help='Whether or not to split or combine frames. Options: (s)plit, (c)ombine, (n)um_frames')
     ap.add_argument('reel', type=str,
         help='The name of the video (locally, on disk).')
     
@@ -132,11 +132,17 @@ def combine_frames(processor, reel, src, dst, extension='.avi', lossless=False):
 
 def main():
     args = parse_args()
+    
+    if args.mode == 'n' or args.mode == 'num_frames':
+        probe = ffprobe3.FFProbe(str(args.reel))
+        num_frames = str(probe.streams[0].nb_frames)
+        print(num_frames)
+        return
 
     dst = args.dst
     if dst == None:
         dst = os.path.basename(os.path.splitext(args.reel)[0])
-    dst = pathlib.Path(dst)
+    dst = pathlib.Path('out') / dst
     common.makedirs(dst)
 
     if args.mode == 's' or args.mode == 'split':
