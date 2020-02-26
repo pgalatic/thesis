@@ -125,7 +125,7 @@ def combine_frames(processor, reel, src, dst, extension='.avi', lossless=False):
      
     # Add audio to that video.
     subprocess.run([
-        processor, '-i', no_audio, '-i', reel,
+        processor, '-i', no_audio, '-i', str(reel),
         '-c', 'copy', '-map', '0:0', '-map', '1:1',
         audio
     ])

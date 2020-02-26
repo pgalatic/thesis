@@ -125,8 +125,9 @@ NUM_FRAMES="$(ls -lR $filename/*.ppm | wc -l)"
 echo "$DURATION"
 echo "$NUM_FRAMES"
 
-# Create video from output images.
+# Create video from output images using libx264.
 $FFMPEG -i ${filename}/out-%05d.png \
+-c:v libx264 -preset veryslow \
 -filter:v "setpts=${DURATION}/${NUM_FRAMES}*N/TB" \
 -r ${NUM_FRAMES}/${DURATION} \
 ${filename}-stylized.$extension
@@ -135,8 +136,3 @@ ${filename}-stylized.$extension
 $FFMPEG -i ${filename}-stylized.$extension -i ${filename}.$extension \
 -c copy -map 0:0 -map 1:1 \
 ${filename}-stylized-audio.$extension
-
-# Re-encode video so that it is viewable by Windows apps (if this step is not
-# applied, the video will be corrupted when transferred from the computer that
-# first assembled it).
-$FFMPEG -i ${filename}-stylized-audio.$extension -pix_fmt yuv420p ${filename}-final.$extension
