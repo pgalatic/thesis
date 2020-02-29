@@ -108,7 +108,7 @@ def main():
     
     # Record the time between the start of the program and preliminary setup.
     t_prelim = time.time()
-    logging.info('{} seconds\tpreliminary setup'.format(round(t_prelim - t_start, 3)))
+    logging.info('{} seconds\tpreliminary setup'.format(round(t_prelim - t_start)))
     
     # Spawn a thread for optical flow calculation.
     optflow_thread = threading.Thread(target=optflow.optflow,
@@ -133,14 +133,14 @@ def main():
     # Record the time between the preliminary setup and optflow calculations.
     # Calculating the frames is rolled into this, but that is so quick proportional to the video size that we can essentially ignore it.
     t_optflow = time.time()
-    logging.info('{} seconds\toptical flow calculations'.format(round(t_optflow - t_prelim, 3)))
+    logging.info('{} seconds\toptical flow calculations'.format(round(t_optflow - t_prelim)))
     
     # Compute neural style transfer.
     stylize.stylize(model, partitions, remote, local)
     
     # Record the time between the optflow calculations and completing stylization.
     t_stylize = time.time()
-    logging.info('{} seconds\tstylization'.format(round(t_stylize - t_prelim, 3)))
+    logging.info('{} seconds\tstylization'.format(round(t_stylize - t_prelim)))
     
     # Combining frames into a final video won't work if we're testing on only a portion of the frames.
     if not args.test:
@@ -153,11 +153,11 @@ def main():
     # Log all the times for good measure.
     t_end = time.time()
     logging.info('====TIMES====')
-    logging.info('{} seconds\tpreliminary setup'.format(round(t_prelim - t_start, 3)))
-    logging.info('{} seconds\toptical flow calculations'.format(round(t_optflow - t_prelim, 3)))
-    logging.info('{} seconds\tstylization'.format(round(t_stylize - t_prelim, 3)))
-    logging.info('{} seconds\twrapping up'.format(round(t_end - t_stylize, 3)))
-    logging.info('{} seconds\tTOTAL'.format(round(t_end - t_start, 3)))
+    logging.info('{} seconds\tpreliminary setup'.format(round(t_prelim - t_start)))
+    logging.info('{} seconds\toptical flow calculations'.format(round(t_optflow - t_prelim)))
+    logging.info('{} seconds\tstylization'.format(round(t_stylize - t_optflow)))
+    logging.info('{} seconds\twrapping up'.format(round(t_end - t_stylize)))
+    logging.info('{} seconds\tTOTAL'.format(round(t_end - t_start)))
     logging.info('=============')
     logging.info('\n------END-----\n')
 

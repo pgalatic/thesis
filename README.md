@@ -1,4 +1,4 @@
-# Image Segmentation and Stylization with Fast Artistic Videos by Ruder & Dosovitskiy
+# Divide and Conquer in Fast Artistic Videos
 A thesis by Paul Galatic, a graduate student at the Rochester Institute of Technology (RIT) in New York State.
 
 ## Background

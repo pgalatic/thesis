@@ -88,7 +88,7 @@ def split_frames(processor, reel, local, extension='.ppm'):
     logging.info('{}\tframes to process'.format(num_frames))
     return num_frames
 
-def combine_frames(processor, reel, src, dst, extension='.avi', lossless=False):
+def combine_frames(processor, reel, src, dst, extension='.mp4', lossless=False):
     # Preliminary operations to make sure that the environment is set up properly.
     check_deps(processor)
 
@@ -118,6 +118,7 @@ def combine_frames(processor, reel, src, dst, extension='.avi', lossless=False):
         subprocess.run([
             processor, '-i', str(src / OUTPUT_FORMAT),
             '-c:v', 'libx264', '-preset', 'veryslow',
+            '-pix_fmt', 'yuv420p',
             '-filter:v', 'setpts={}/{}*N/TB'.format(duration, num_frames),
             '-r', '{}/{}'.format(num_frames, duration),
             no_audio
