@@ -137,6 +137,9 @@ def main():
     
     # Compute neural style transfer.
     stylize.stylize(model, partitions, remote, local)
+    # Wait for all output files to be present.
+    for idx in range(len(frames)):
+        common.wait_for(str(remote / (OUTPUT_FORMAT % (idx + 1))))
     
     # Record the time between the optflow calculations and completing stylization.
     t_stylize = time.time()

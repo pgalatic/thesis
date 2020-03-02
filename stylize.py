@@ -27,15 +27,15 @@ def claim_job(remote, partitions):
     for idx, partition in enumerate(partitions):
         if len(partition) == 0: continue # Edge case; this shouldn't happen
     
-        placeholder = str(remote / 'partition_{}_{}_{}.plc'.format(
-            idx, os.path.basename(partition[0]), os.path.basename(partition[-1])))
+        placeholder = str(remote / 'partition_{}.plc'.format(idx))
         # Check if someone has already claimed this partition.
         if not os.path.isdir(placeholder):
             try:
                 with open(placeholder, 'x') as handle:
                     handle.write('PLACEHOLDER CREATED BY {name}'.format(name=platform.node()))
                 
-                logging.info('Partition {} claimed'.format(placeholder))
+                logging.info(str(remote / 'partition_{}.plc claimed\t[{}:{}]'.format(
+                    idx, os.path.basename(partition[0]), os.path.basename(partition[-1]))))
                 return partition
                 
             except FileExistsError:

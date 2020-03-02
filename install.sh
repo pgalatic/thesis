@@ -17,6 +17,11 @@ cd ~/torch
 bash install-deps
 bash install.sh
 
+# Add Torch to PATH
+export PATH=$PATH:~/torch/install/bin/
+source ~/.bashrc
+source ~/.profile
+
 # Add required lua packages
 luarocks install torch
 luarocks install nn
@@ -28,7 +33,7 @@ bash update.sh
 
 cd -
 
-# Add Torch to PATH
+# Add Torch to PATH (again)
 export PATH=$PATH:~/torch/install/bin/
 source ~/.bashrc
 source ~/.profile
