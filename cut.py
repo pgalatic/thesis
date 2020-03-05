@@ -67,12 +67,6 @@ def get_dists(frames, dist_func):
     # Sort in descending order by the distance between frames.
     return sorted(dists, key=lambda x: x[-1], reverse=True)
 
-def assess_partitions(partitions):
-    lengths = [len(partition) for partition in partitions]
-    logging.info('{}\t# of partitions'.format(len(partitions)))
-    logging.info('{}\tmean of partition length'.format(statistics.mean(lengths)))
-    logging.info('{}\tstd of partition length'.format(statistics.stdev(lengths)))
-
 def divide(frames, write_to=None):
     distpairs = get_dists(frames, kl_dist) # Change the second parameter to change the distance metric.
     # Ignore any distances that aren't significantly above the average as defined by MIN_DIST_FACTOR.
@@ -102,8 +96,7 @@ def divide(frames, write_to=None):
     # Partitions are a list of lists of frame filenames.
     partitions = [(idx, idy) for idx, idy in zip([0] + keys, keys + [None])]
     
-    assess_partitions(partitions)
-    
+    logging.debug('Number of partitions: {}'.format(len(partitions)))
     return partitions
 
 def read_cuts(fname, frames):
@@ -112,8 +105,7 @@ def read_cuts(fname, frames):
         keys = sorted([int(row[0]) for row in rdr])
         partitions = [(idx, idy) for idx, idy in zip([0] + keys, keys + [None])]
     
-    assess_partitions(partitions)
-    
+    logging.debug('Number of partitions: {}'.format(len(partitions)))
     return partitions
 
 def main():

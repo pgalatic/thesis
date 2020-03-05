@@ -4,3 +4,6 @@
 [submodule "fast-artistic-videos-pytorch"]
 	path = fast-artistic-videos-pytorch
 	url = https://github.com/pgalatic/fast-artistic-videos-pytorch.git
+[submodule "core"]
+	path = core
+	url = https://github.com/pgalatic/fast-artistic-videos-pytorch.git

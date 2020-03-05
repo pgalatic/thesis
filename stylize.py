@@ -21,7 +21,7 @@ from PIL import Image
 
 # LOCAL LIB
 import common
-from fast-artistic-videos-pytorch import core
+from core import core
 from const import *
 
 def claim_job(remote, partitions):
