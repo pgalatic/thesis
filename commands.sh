@@ -31,4 +31,4 @@ python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pg
 python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/face.mp4 /proj/videorendering-PG0/pgalatic/scream.t7 --local_video=videos/face.mp4 --local_style=styles/checkpoint-scream-video.t7 --local=/proj/videorendering-PG0/pgalatic/ --read_cuts=cuts/face.csv
 
 # 13 cuts
-python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/face.mp4 /proj/videorendering-PG0/pgalatic/scream.t7 --local_video=videos/face.mp4 --local_style=styles/checkpoint-scream-video.t7 --local=/proj/videorendering-PG0/pgalatic/ --read_cuts=cuts/face.csv
+python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/eggdog.mp4 /proj/videorendering-PG0/pgalatic/WomanHat.t7 --local_video=videos/eggdog.mp4 --local_style=styles/checkpoint-WomanHat-video.t7 --local=/proj/videorendering-PG0/pgalatic/ --read_cuts=cuts/eggdog.csv

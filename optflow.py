@@ -27,7 +27,7 @@ def most_recent_optflo(remote):
         return 1
 
     # The most recent frame is the most recent placeholder plus 1.
-    placeholders = glob.glob1(str(remote), '*.plc')
+    placeholders = glob.glob1(str(remote), 'frame*.plc')
     if len(placeholders) == 0: return 1
     
     return max(map(int, [re.findall(r'\d+', plc)[0] for plc in placeholders])) + 1
@@ -127,7 +127,6 @@ def optflow(downsamp_factor, num_frames, remote, local):
     running = []
     completing = []
     
-    # FIXME: If optflow starts before the frames are entirely split, then the program will end early.
     while job is not None:
         # Spawn a thread to complete that job, then get the next one.
         running.append(threading.Thread(target=run_job, 

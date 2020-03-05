@@ -67,7 +67,7 @@ def main():
     args = parse_args()
     logging.basicConfig(filename=LOGFILE, filemode='a', format=LOGFORMAT, level=logging.INFO)
     logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
-    logging.info('\n-----START-----')
+    logging.info('\n-----START {} -----'.format(os.path.basename(args.video)))
     
     # Make output folder(s), if necessary
     remote = pathlib.Path(args.remote) / os.path.basename(os.path.splitext(args.video)[0])
@@ -122,10 +122,10 @@ def main():
         partitions = cut.read_cuts(args.read_cuts, frames)
     elif args.test:
         midpoint = NUM_FRAMES_FOR_TEST // 2
-        partitions = [frames[:midpoint], frames[midpoint:]]
+        partitions = [(0, midpoint), (midpoint, None)]
     else:
         partitions = common.wait_complete(DIVIDE_TAG, cut.divide, [frames, args.write_cuts], remote)
-    
+        
     # FIXME: Right now, the Torch stylization procedure crashes when it tries to use an incomplete file.
     # As a result, we have to join the thread in order to perform stylization.
     optflow_thread.join()

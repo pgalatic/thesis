@@ -1,0 +1,6 @@
+[submodule "thesis"]
+	path = thesis
+	url = C:/Users/pgala/Documents/Scripts/thesis
+[submodule "fast-artistic-videos-pytorch"]
+	path = fast-artistic-videos-pytorch
+	url = https://github.com/pgalatic/fast-artistic-videos-pytorch.git

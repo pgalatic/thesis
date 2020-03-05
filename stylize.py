@@ -21,6 +21,7 @@ from PIL import Image
 
 # LOCAL LIB
 import common
+from fast-artistic-videos-pytorch import core
 from const import *
 
 def claim_job(remote, partitions):
@@ -35,7 +36,7 @@ def claim_job(remote, partitions):
                     handle.write('PLACEHOLDER CREATED BY {name}'.format(name=platform.node()))
                 
                 logging.info(str(remote / 'partition_{}.plc claimed\t[{}:{}]'.format(
-                    idx, os.path.basename(partition[0]), os.path.basename(partition[-1]))))
+                    idx, partition[0], partition[1])))
                 return partition
                 
             except FileExistsError:
@@ -46,51 +47,17 @@ def claim_job(remote, partitions):
     # There are no more jobs.
     return None
 
-def run_job(frames, style, remote, local, put_thread):    
-    # Get a list of the indices of the frames we're manipulating.
-    idys = sorted(list(map(int, [re.findall(r'\d+', os.path.basename(frame))[0] for frame in frames])))
-
-    # The following are all arguments to be fed into the Torch script.
+def run_job(stylizer, framefiles, flowfiles, certfiles, remote, local, completing):
+    idys = sorted(list(map(int, [re.findall(r'\d+', os.path.basename(fname))[0] for fname in framefiles])))
     
-    # The pattern denoting the content images.
-    input_pattern = str('..' / local / FRAME_NAME)
-    
-    # The pattern denoting the optical flow images.
-    # FIXME: Make sure that the optical flow files are transferred to the local partition.
-    flow_pattern = str(remote / 'backward_[%d]_{%d}.flo')
-    
-    # The pattern denoting the consistency images (for handling potential occlusion).
-    occlusions_pattern = str(remote / 'reliable_[%d]_{%d}.pgm')
-    
-    # The pattern denoting where and by what name the output PNG images should be deposited.
-    output_prefix = str('..' / local / OUTPUT_PREFIX)
-    
-    # Tell the algorithm to start at the beginning of this cut and end at the end of it.
-    continue_with = str(idys[0])
-    num_frames = str(idys[0] + len(idys) - 1)
-
-    # Run stylization.
-    proc = subprocess.run([
-        'th', 'fast_artistic_video.lua',
-        '-input_pattern', input_pattern,
-        '-flow_pattern', flow_pattern,
-        '-occlusions_pattern', occlusions_pattern,
-        '-output_prefix', output_prefix,
-        '-model_vid', str('..' / style),
-        '-continue_with', continue_with,
-        '-num_frames', num_frames,
-        '-new_cut', '1'
-    ], cwd=str(pathlib.Path(os.getcwd()) / 'core'))
-    logging.debug(' '.join(proc.args))
+    stylizer.stylize(framefiles, flowfiles, certfiles, out_dir=str(local))
     
     # Upload the product of stylization to the remote directory as necessary.
     products = [str(local / (OUTPUT_FORMAT % (idy))) for idy in idys]
-    for product in products:
-        assert(os.path.exists(product))
     
     logging.info('Uploading {} files...'.format(len(products)))
     complete = threading.Thread(target=common.upload_files, args=(products, remote))
-    put_thread.append(complete)
+    completing.append(complete)
     complete.start()
 
 def stylize(style, partitions, remote, local):
@@ -100,11 +67,30 @@ def stylize(style, partitions, remote, local):
     
     running = []
     completing = []
+    framefiles = sorted([str(local / name) for name in glob.glob1(str(local), '*.ppm')])
+    # First flow/cert doesn't exist, so use None as a placeholder
+    flowfiles = [None] + sorted([str(remote / name) for name in glob.glob1(str(remote), 'backward*.flo')])
+    certfiles = [None] + sorted([str(remote / name) for name in glob.glob1(str(remote), 'reliable*.pgm')])
+    stylizer = core.StylizationModel(str(style))
+    
     partition = claim_job(remote, partitions)
     
     while partition is not None:
-        # Style transfer is so computationally intense that threading it doesn't yield much time gain.
-        run_job(partition, style, remote, local, completing)
+        frames_p = framefiles[partition[0]:partition[-1]]
+        flows_p = flowfiles[partition[0]:partition[-1]]
+        certs_p = certfiles[partition[0]:partition[-1]]
+        
+        # Spawn a thread to complete that job, then get the next one.
+        running.append(threading.Thread(
+            target=run_job, 
+            args=(stylizer, frames_p, flows_p, certs_p, remote, local, completing)))
+        running[-1].start()
+        
+        # If there isn't room in the jobs list, wait for a thread to finish.
+        while len(running) >= MAX_STYLIZATION_JOBS:
+            running = [thread for thread in running if thread.isAlive()]
+            time.sleep(1)
+        
         partition = claim_job(remote, partitions)
     
     # Join all remaining threads.

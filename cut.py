@@ -100,7 +100,7 @@ def divide(frames, write_to=None):
         logging.info('...Wrote keys to {}.'.format(write_to))
     
     # Partitions are a list of lists of frame filenames.
-    partitions = [frames[idx:idy] for idx, idy in zip([0] + keys, keys + [None])]
+    partitions = [(idx, idy) for idx, idy in zip([0] + keys, keys + [None])]
     
     assess_partitions(partitions)
     
@@ -110,7 +110,7 @@ def read_cuts(fname, frames):
     with open(fname, 'r') as f:
         rdr = csv.reader(f)
         keys = sorted([int(row[0]) for row in rdr])
-        partitions = [frames[idx:idy] for idx, idy in zip([0] + keys, keys + [None])]
+        partitions = [(idx, idy) for idx, idy in zip([0] + keys, keys + [None])]
     
     assess_partitions(partitions)
     

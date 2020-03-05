@@ -113,13 +113,15 @@ def upload_files(fnames, dst, absolute_path=False):
             newname = dst
         else:
             newname = str(pathlib.Path(dst) / os.path.basename(fname))
-            
-        # Only upload if the file doesn't already exist.
-        if os.path.exists(newname):
-            continue
-
         # In case anyone is waiting on a file, "label" it as incomplete.
         partname = newname + '.part'
+            
+        # Only upload if the file doesn't already exist and isn't already being uploaded.
+        if os.path.exists(newname) and not os.path.exists(partname):
+            continue
+
+        logging.debug('Uploading {}...'.format(newname))
+
         try:
             # This will only succeed if this program successfully created the file.
             # Uses file-objects to help guard against race conditions.
