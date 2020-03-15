@@ -59,6 +59,14 @@ def split_frames(processor, reel, local, extension='.ppm'):
     return num_frames
 
 def combine_frames(processor, reel, src, dst, extension='.mp4', lossless=False):
+    no_audio = str(dst / ('{}_no_audio{}'.format(basename, extension)))
+    audio = str(dst / ('{}_stylized{}'.format(basename, extension)))
+
+    # Don't try to combine frames if the destination already exists.
+    # FFMPEG checks for this, but if we should preemptively avoid it if we can.
+    if os.path.exists(audio):
+        return
+
     # Preliminary operations to make sure that the environment is set up properly.
     check_deps(processor)
 
@@ -69,10 +77,7 @@ def combine_frames(processor, reel, src, dst, extension='.mp4', lossless=False):
     
     basename = os.path.splitext(os.path.basename(str(reel)))[0]
     
-    # Combine stylized frames into video.
-    no_audio = str(dst / ('{}_no_audio{}'.format(basename, extension)))
-    audio = str(dst / ('{}_stylized{}'.format(basename, extension)))
-    
+    # Combine stylized frames into video.    
     if lossless:
         logging.debug('Running lossless compression...')
         subprocess.run([

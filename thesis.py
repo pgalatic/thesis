@@ -112,7 +112,7 @@ def main():
     
     # Either read the cuts from disk or compute them manually (if applicable).
     if args.no_cuts:
-        partitions = [frames]
+        partitions = [(0, None)]
     elif args.read_cuts:
         partitions = cut.read_cuts(args.read_cuts, frames)
     elif args.test:
