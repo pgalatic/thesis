@@ -10,11 +10,18 @@ import pdb
 import glob
 import time
 import logging
+import pathlib
+import argparse
 import platform
 import threading
 import subprocess
 
 # EXTERNAL LIB
+import cv2
+import torch
+import numpy as np
+
+from PIL import Image
 
 # LOCAL LIB
 import common
@@ -62,66 +69,67 @@ def claim_job(remote, local, num_frames):
     # There are no more jobs.
     return None
 
-def run_job(job, remote, local, downsamp_factor, put_thread):
+def load_and_preprocess(fname):
+    load = cv2.cvtColor(cv2.imread(fname), cv2.COLOR_RGB2GRAY)
+    return load
+
+def write_flo(fname, tensor):
+    out = open(fname, 'wb')
+    np.array([ 80, 73, 69, 72 ], np.uint8).tofile(out)
+    np.array([ tensor.shape[0], tensor.shape[1] ], np.int32).tofile(out)
+    tensor.tofile(out)
+    out.close()
+
+def run_job(job, net, remote, local, completing):
     if job == None or job < 0:
         raise Exception('Bad job passed to run_job: {}'.format(job))
     
-    logging.info('Computing optical flow for job {}.'.format(job))
+    time_start = time.time()
     
-    start_local = str(local / (FRAME_NAME % job))
-    end_local = str(local / (FRAME_NAME % (job + 1)))
+    logging.info('Computing optical flow for job {}.'.format(job))
+    start_name = str(local / (FRAME_NAME % job))
+    end_name = str(local / (FRAME_NAME % (job + 1)))
     forward_name = str(local / 'forward_{i}_{j}.flo'.format(i=job, j=job+1))
     backward_name = str(local / 'backward_{j}_{i}.flo'.format(i=job, j=job+1))
-    reliable_forward = str(local / 'reliable_{i}_{j}.pgm'.format(i=job, j=job+1))
-    reliable_backward = str(local / 'reliable_{j}_{i}.pgm'.format(i=job, j=job+1))
-        
-    # Compute forward optical flow.
-    logging.debug('Job {}: Forward optical flow'.format(job))
-    forward_dm = subprocess.Popen([
-        './core/deepmatching-static', start_local, end_local, '-nt', '0', '-downscale', downsamp_factor
-    ], stdout=subprocess.PIPE)
-    forward_df = subprocess.run([
-        './core/deepflow2-static', start_local, end_local, forward_name, '-match'
-    ], stdin=forward_dm.stdout)
+    reliable_name = str(local / 'reliable_{j}_{i}.pgm'.format(i=job, j=job+1))
     
-    # Compute backward optical flow.
-    logging.debug('Job {}: Backward optical flow'.format(job))
-    backward_dm = subprocess.Popen([
-        './core/deepmatching-static', end_local, start_local, '-nt', '0', '-downscale', downsamp_factor, '|',
-    ], stdout=subprocess.PIPE)
-    backward_df = subprocess.run([
-        './core/deepflow2-static', end_local, start_local, backward_name, '-match'
-    ], stdin=backward_dm.stdout)
+    start = load_and_preprocess(start_name)
+    end = load_and_preprocess(end_name)
     
-    # Compute consistency check for forwards optical flow. This might not be necessary?
-    #con1 = subprocess.Popen([
-    #    './core/consistencyChecker/consistencyChecker',
-    #    forward_name, backward_name, reliable_forward, start_local
-    #])
+    # Compute forward and backward optical flow.
+    logging.debug('Job {}: Forward optical flow.'.format(job))
+    forward = cv2.calcOpticalFlowFarneback(
+        start, end, None, 0.5, 5, 30, 7, 7, 1.5, cv2.OPTFLOW_FARNEBACK_GAUSSIAN)
+    write_flo(forward_name, forward)
+    logging.debug('Job {}: Backward optical flow.'.format(job))
+    backward = cv2.calcOpticalFlowFarneback(
+        end, start, None, 0.5, 3, 15, 3, 5, 1.1, cv2.OPTFLOW_FARNEBACK_GAUSSIAN)
+    write_flo(backward_name, backward)
     
     # Compute consistency check for backwards optical flow.
     logging.debug('Job {}: Consistency check.'.format(job))
-    con2 = subprocess.Popen([
+    con2 = subprocess.run([
         './core/consistencyChecker/consistencyChecker',
-        backward_name, forward_name, reliable_backward, end_local
+        backward_name, forward_name, reliable_name, end_name
     ])
     
-    #con1.wait()
-    con2.wait()
+    logging.info(
+            'Elapsed time for computing optical flow: {}'.format(round(time.time() - time_start, 3)))
     
     # Spawn a thread to put the produced files in the remote directory.
     # TODO: Reduce thread creation overhead by having one background thread operating on a list?
     # TODO: Look at thread pools.
     # TODO: Assess time taken in various section of program (threads vs. bash commands?)
     # TODO: Determine which bash commands can be executed in parallel.
-    fnames = [forward_name, backward_name, reliable_backward]
-    complete = threading.Thread(target=common.upload_files, args=(fnames, remote))
-    put_thread.append(complete)
-    complete.start()
+    if remote != local:
+        fnames = [forward_name, backward_name, reliable_name]
+        complete = threading.Thread(target=common.upload_files, args=(fnames, remote))
+        completing.append(complete)
+        complete.start()
 
-def optflow(downsamp_factor, num_frames, remote, local): 
+def optflow(num_frames, net_name, remote, local): 
     logging.info('Starting optical flow calculations...')
-        
+    
     # Get a job! We need our first job before we can start threading.
     job = claim_job(remote, local, num_frames)
     running = []
@@ -129,9 +137,10 @@ def optflow(downsamp_factor, num_frames, remote, local):
     
     while job is not None:
         # Spawn a thread to complete that job, then get the next one.
-        running.append(threading.Thread(target=run_job, 
-            args=(job, remote, local, downsamp_factor, completing)))
-        running[-1].start()
+        to_run = threading.Thread(target=run_job, 
+            args=(job, net, remote, local, completing))
+        running.append(to_run)
+        to_run.start()
         
         # If there isn't room in the jobs list, wait for a thread to finish.
         while len(running) >= MAX_OPTFLOW_JOBS:
@@ -152,3 +161,35 @@ def optflow(downsamp_factor, num_frames, remote, local):
         thread.join()
 
     logging.info('...optical flow calculations are finished.')
+
+def parse_args():
+    '''Parses arguments.'''
+    ap = argparse.ArgumentParser(epilog='Specify image1 and image2 to compute optical flow between images. Otherwise, specify just \'dir\' to compute optical flow between all adjacent pairs of images in \'dir\'.\n\nDo not specify the full paths of image1 or image2!')
+    
+    ap.add_argument('dir',
+        help='The directory containing the optical flow files.')
+    ap.add_argument('net_name',
+        help='The path to the model used for computing optical flow.')
+    ap.add_argument('image1', nargs='?', default=None,
+        help='The name of the .ppm image to compute optical flow FROM')
+    ap.add_argument('image2', nargs='?', default=None,
+        help='The name of the .ppm image to compute optical flow TO')
+    ap.add_argument('outname', nargs='?', default='out.flo',
+        help='The name of the output file, if image1 and image2 are specified')
+    
+    return ap.parse_args()
+
+def main():
+    args = parse_args()
+    common.start_logging()
+    
+    dir = pathlib.Path(args.dir)
+    
+    if args.image1 and args.image2:
+        pass # implement this later
+    else:
+        num_frames = len([str(dir / frame) for frame in glob.glob1(str(dir), '*.ppm')])
+        optflow(num_frames, args.net_name, dir, dir)
+
+if __name__ == '__main__':
+    main()

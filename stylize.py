@@ -81,10 +81,11 @@ def stylize(style, partitions, remote, local):
         certs_p = certfiles[partition[0]:partition[-1]]
         
         # Spawn a thread to complete that job, then get the next one.
-        running.append(threading.Thread(
+        to_run = threading.Thread(
             target=run_job, 
-            args=(stylizer, frames_p, flows_p, certs_p, remote, local, completing)))
-        running[-1].start()
+            args=(stylizer, frames_p, flows_p, certs_p, remote, local, completing))
+        running.append(to_run)
+        to_run.start()
         
         # If there isn't room in the jobs list, wait for a thread to finish.
         while len(running) >= MAX_STYLIZATION_JOBS:

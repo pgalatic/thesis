@@ -21,40 +21,10 @@ import ffprobe3
 import common
 from const import *
 
-def parse_args():
-    '''Parses arguments.'''
-    ap = argparse.ArgumentParser()
-    
-    # Required arguments
-    ap.add_argument('mode', type=str,
-        help='Whether or not to split or combine frames. Options: (s)plit, (c)ombine, (n)um_frames')
-    ap.add_argument('reel', type=str,
-        help='The name of the video (locally, on disk).')
-    
-    # Optional arguments
-    ap.add_argument('--src', type=str, nargs='?', default=None,
-        help='The path to the folder in which the frames are contained, if combining them.')
-    ap.add_argument('--dst', type=str, default=None,
-        help='The path to the folder in which the product(s) of the operation will be placed. By default, it will place products in a folder derived from the name of the reel.')
-    ap.add_argument('--extension', type=str, nargs='?', default='.ppm',
-        help='The extension used for the frames of a split video. If performing manual cuts, set this to .png [.ppm].')
-    ap.add_argument('--processor', type=str, nargs='?', default='ffmpeg',
-        help='The video processer to use, either ffmpeg (preferred) or avconv (untested) [ffmpeg].')
-    ap.add_argument('--lossless', action='store_true',
-        help='Set in order to use a lossless video encoding, which will create an extremely large video file.')
-    
-    return ap.parse_args()
-
 def check_deps(processor):
     check = shutil.which(processor)
     if not check:
         sys.exit('Video processor {} not installed. Aborting'.format(processor))
-    if not (os.path.exists('core/deepmatching-static') and os.path.exists('core/deepflow2-static')):
-        sys.exit('Deepmatching/Deepflow static binaries are missing. Aborting')
-    else:
-        # Ensure that Deepmatching/Deepflow can be executed.
-        subprocess.Popen(['chmod', '+x', 'core/deepmatching-static'])
-        subprocess.Popen(['chmod', '+x', 'core/deepflow2-static'])
 
 def split_frames(processor, reel, local, extension='.ppm'):
     # Preliminary operations to make sure that the environment is set up properly.
@@ -131,8 +101,33 @@ def combine_frames(processor, reel, src, dst, extension='.mp4', lossless=False):
         audio
     ])
 
+def parse_args():
+    '''Parses arguments.'''
+    ap = argparse.ArgumentParser()
+    
+    # Required arguments
+    ap.add_argument('mode', type=str,
+        help='Whether or not to split or combine frames. Options: (s)plit, (c)ombine, (n)um_frames')
+    ap.add_argument('reel', type=str,
+        help='The name of the video (locally, on disk).')
+    
+    # Optional arguments
+    ap.add_argument('--src', type=str, nargs='?', default=None,
+        help='The path to the folder in which the frames are contained, if combining them.')
+    ap.add_argument('--dst', type=str, default=None,
+        help='The path to the folder in which the product(s) of the operation will be placed. By default, it will place products in a folder derived from the name of the reel.')
+    ap.add_argument('--extension', type=str, nargs='?', default='.ppm',
+        help='The extension used for the frames of a split video. If performing manual cuts, set this to .png [.ppm].')
+    ap.add_argument('--processor', type=str, nargs='?', default='ffmpeg',
+        help='The video processer to use, either ffmpeg (preferred) or avconv (untested) [ffmpeg].')
+    ap.add_argument('--lossless', action='store_true',
+        help='Set in order to use a lossless video encoding, which will create an extremely large video file.')
+    
+    return ap.parse_args()
+
 def main():
     args = parse_args()
+    common.start_logging()
     
     if args.mode == 'n' or args.mode == 'num_frames':
         probe = ffprobe3.FFProbe(str(args.reel))

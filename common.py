@@ -20,6 +20,10 @@ import threading
 # LOCAL LIB
 from const import *
 
+def start_logging():
+    logging.basicConfig(filename=LOGFILE, filemode='a', format=LOGFORMAT, level=logging.INFO)
+    logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+
 def makedirs(dirname):
     # Convert from pathlib.Path to string if necessary.
     dirname = str(dirname)
@@ -117,7 +121,7 @@ def upload_files(fnames, dst, absolute_path=False):
         partname = newname + '.part'
             
         # Only upload if the file doesn't already exist and isn't already being uploaded.
-        if os.path.exists(newname) and not os.path.exists(partname):
+        if os.path.exists(newname) or os.path.exists(partname):
             continue
 
         logging.debug('Uploading {}...'.format(newname))

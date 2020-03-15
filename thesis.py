@@ -36,8 +36,10 @@ def parse_args():
         help='The directory common to all nodes, e.g. \\mnt\\o\\foo\\.')
     ap.add_argument('video', type=str,
         help='The path to the stylization target as it would appear on the common directory, e.g. \\mnt\\o\\foo\\bar.mp4\\')
+    ap.add_argument('flow', type=str,
+        help='The path to the model used for calculating optical flow as it would appear on the common directory, e.g. \\mnt\\o\\foo\\bar.pth')
     ap.add_argument('style', type=str,
-        help='The path to the model used for stylization as it would appear on the common directory, e.g. \\mnt\\o\\foo\\bar.t7\\')
+        help='The path to the model used for stylization as it would appear on the common directory, e.g. \\mnt\\o\\foo\\bar.pth')
         
     # Optional arguments
     ap.add_argument('--test', action='store_true',
@@ -46,12 +48,12 @@ def parse_args():
         help='The local directory where files will temporarily be stored during processing, to cut down on communication costs over NFS. By defualt, local files will be stored in a folder at the same level of the repository [out].')
     ap.add_argument('--local_video', type=str, nargs='?', default=None,
         help='The local path to the stylization target. If this argument is specified, the video will be copied to the remote directory. If left unspecified and the program finds no video of the given name present at the remote directory, the program will wait for another node to upload the video [None].')
+    ap.add_argument('--local_flow', type=str, nargs='?', default=None,
+        help='Same as --local_video, but for the model used for computing optical flow [None].')
     ap.add_argument('--local_style', type=str, nargs='?', default=None,
         help='Same as --local_video, but for the model used for feed-forward stylization [None].')
     ap.add_argument('--processor', type=str, nargs='?', default='ffmpeg',
         help='The video processer to use, either ffmpeg (preferred) or avconv (untested) [ffmpeg].')
-    ap.add_argument('--downsamp_factor', type=str, nargs='?', default='2',
-        help='The downsampling factor for optical flow calculations. Increase this slightly if said calculations are too slow or memory-intense for your machine [2].')    
     ap.add_argument('--no_cuts', action='store_true',
         help='If a video has no cuts, use this to parallelize only the optical flow calculations.')
     ap.add_argument('--read_cuts', type=str, nargs='?', default=None,
@@ -65,8 +67,7 @@ def main():
     '''Driver program.'''
     t_start = time.time()
     args = parse_args()
-    logging.basicConfig(filename=LOGFILE, filemode='a', format=LOGFORMAT, level=logging.INFO)
-    logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+    common.start_logging()
     logging.info('\n-----START {} -----'.format(os.path.basename(args.video)))
     
     # Make output folder(s), if necessary
@@ -74,27 +75,26 @@ def main():
     common.makedirs(remote)
     local = pathlib.Path(args.local) / os.path.basename(os.path.splitext(args.video)[0])
     common.makedirs(local)
-    reel = local / os.path.basename(args.video)
-    model = local / os.path.basename(args.style)
+    video_path = local / os.path.basename(args.video)
+    flow_path = local / os.path.basename(args.flow)
+    style_path = local / os.path.basename(args.style)
     
-    # Upload the video to the remote system, if it was specified, otherwise wait for the video to be uploaded.
-    if args.local_video:
-        common.upload_files([args.local_video], args.video, absolute_path=True)
-        if not os.path.exists(str(reel)):
-            shutil.copyfile(args.local_video, str(reel))
-    elif not os.path.exists(str(reel)):
-        common.wait_for(args.video)
-        shutil.copyfile(args.video, str(reel))
+    # This loop ensures all nodes have the prerequisite files and models.
+    for src, cmn, dst in zip(
+        [args.local_video, args.local_flow, args.local_style],
+        [args.video, args.flow, args.style],
+        [video_path, flow_path, style_path]):
+        if src:
+            # We have the master copy, so we have to distribute it to the common drive.
+            common.upload_files([src], cmn, absolute_path=True)
+            if not os.path.exists(str(dst)):
+                shutil.copyfile(src, str(dst))
+        elif not os.path.exists(str(dst)):
+            # We do not have the master copy, so we have to wait for it to be uploaded, then copy it locally.
+            common.wait_for(cmn)
+            shutil.copyfile(cmn, dst)
     
-    if args.local_style:
-        common.upload_files([args.local_style], args.style, absolute_path=True)
-        if not os.path.exists(str(model)):
-            shutil.copyfile(args.local_style, str(model))
-    elif not os.path.exists(str(model)):
-        common.wait_for(args.style)
-        shutil.copyfile(args.style, str(model))
-    
-    num_frames = video.split_frames(args.processor, reel, local)
+    num_frames = video.split_frames(args.processor, video_path, local)
     # Split video into individual frames
     frames = sorted([str(local / frame) for frame in glob.glob1(str(local), '*.ppm')])
     
@@ -112,7 +112,7 @@ def main():
     
     # Spawn a thread for optical flow calculation.
     optflow_thread = threading.Thread(target=optflow.optflow,
-        args=(args.downsamp_factor, num_frames, remote, local))
+        args=(num_frames, flow_path, remote, local))
     optflow_thread.start()
     
     # Either read the cuts from disk or compute them manually (if applicable).
@@ -136,7 +136,7 @@ def main():
     logging.info('{} seconds\toptical flow calculations'.format(round(t_optflow - t_prelim)))
     
     # Compute neural style transfer.
-    stylize.stylize(model, partitions, remote, local)
+    stylize.stylize(style_path, partitions, remote, local)
     # Wait for all output files to be present.
     for idx in range(len(frames)):
         common.wait_for(str(remote / (OUTPUT_FORMAT % (idx + 1))))
@@ -147,7 +147,7 @@ def main():
     
     # Combining frames into a final video won't work if we're testing on only a portion of the frames.
     if not args.test:
-        video.combine_frames(args.processor, reel, remote, local)
+        video.combine_frames(args.processor, video_path, remote, local)
     
     # Clean up any lingering files.
     if os.path.exists(DIVIDE_TAG):
