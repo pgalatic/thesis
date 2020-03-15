@@ -56,6 +56,8 @@ def parse_args():
         help='The .csv file containing frames that denote cuts. Computing cuts manually is always more accurate than an automatic assessment, if time permits. Use video.py to split frames for manual inspection. [None]')
     ap.add_argument('--write_cuts', type=str, nargs='?', default=None,
         help='The .csv file in which to write automatically computed cuts for later reading [None].')
+    ap.add_argument('--precompute', action='store_true',
+        help='Set to True to precompute optical flow instead of computing as-needed. When this option is True, optical flow files will NOT be deleted. [False]')
     
     return ap.parse_args()
 

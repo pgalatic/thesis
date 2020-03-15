@@ -59,12 +59,14 @@ def split_frames(processor, reel, local, extension='.ppm'):
     return num_frames
 
 def combine_frames(processor, reel, src, dst, extension='.mp4', lossless=False):
+    basename = os.path.splitext(os.path.basename(str(reel)))[0]
     no_audio = str(dst / ('{}_no_audio{}'.format(basename, extension)))
     audio = str(dst / ('{}_stylized{}'.format(basename, extension)))
 
     # Don't try to combine frames if the destination already exists.
     # FFMPEG checks for this, but if we should preemptively avoid it if we can.
     if os.path.exists(audio):
+        logging.info('{} already exists -- quitting'.format(audio))
         return
 
     # Preliminary operations to make sure that the environment is set up properly.
@@ -74,8 +76,6 @@ def combine_frames(processor, reel, src, dst, extension='.mp4', lossless=False):
     probe = ffprobe3.FFProbe(str(reel))
     duration = probe.streams[-1].duration
     num_frames = str(probe.streams[0].nb_frames)
-    
-    basename = os.path.splitext(os.path.basename(str(reel)))[0]
     
     # Combine stylized frames into video.    
     if lossless:

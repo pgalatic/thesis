@@ -145,7 +145,7 @@ def upload_files(fnames, dst, absolute_path=False):
             logging.warning('\nFailed uploading -- file {} already exists!'.format(fname))
         except OSError:
             # The file path specified is incorrect, or there was another error.
-            logging.error('\nFailed uploading {} -- OSError!'.format(fname), exc_info=True)
+            logging.debug('\nFailed uploading {} -- OSError!'.format(fname), exc_info=True)
         finally:
             if os.path.exists(partname):
                 os.remove(partname)
