@@ -1,7 +1,12 @@
 *.t7
 *.pdf
+core/
+cuts/
+logs/
+out/
+products/
+styles/
 videos/
-core/consistencyChecker/consistencyChecker
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

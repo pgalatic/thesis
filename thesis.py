@@ -36,8 +36,6 @@ def parse_args():
         help='The directory common to all nodes, e.g. \\mnt\\o\\foo\\.')
     ap.add_argument('video', type=str,
         help='The path to the stylization target as it would appear on the common directory, e.g. \\mnt\\o\\foo\\bar.mp4\\')
-    ap.add_argument('flow', type=str,
-        help='The path to the model used for calculating optical flow as it would appear on the common directory, e.g. \\mnt\\o\\foo\\bar.pth')
     ap.add_argument('style', type=str,
         help='The path to the model used for stylization as it would appear on the common directory, e.g. \\mnt\\o\\foo\\bar.pth')
         
@@ -48,8 +46,6 @@ def parse_args():
         help='The local directory where files will temporarily be stored during processing, to cut down on communication costs over NFS. By defualt, local files will be stored in a folder at the same level of the repository [out].')
     ap.add_argument('--local_video', type=str, nargs='?', default=None,
         help='The local path to the stylization target. If this argument is specified, the video will be copied to the remote directory. If left unspecified and the program finds no video of the given name present at the remote directory, the program will wait for another node to upload the video [None].')
-    ap.add_argument('--local_flow', type=str, nargs='?', default=None,
-        help='Same as --local_video, but for the model used for computing optical flow [None].')
     ap.add_argument('--local_style', type=str, nargs='?', default=None,
         help='Same as --local_video, but for the model used for feed-forward stylization [None].')
     ap.add_argument('--processor', type=str, nargs='?', default='ffmpeg',
@@ -76,14 +72,13 @@ def main():
     local = pathlib.Path(args.local) / os.path.basename(os.path.splitext(args.video)[0])
     common.makedirs(local)
     video_path = local / os.path.basename(args.video)
-    flow_path = local / os.path.basename(args.flow)
     style_path = local / os.path.basename(args.style)
     
     # This loop ensures all nodes have the prerequisite files and models.
     for src, cmn, dst in zip(
-        [args.local_video, args.local_flow, args.local_style],
-        [args.video, args.flow, args.style],
-        [video_path, flow_path, style_path]):
+        [args.local_video, args.local_style],
+        [args.video, args.style],
+        [video_path, style_path]):
         if src:
             # We have the master copy, so we have to distribute it to the common drive.
             common.upload_files([src], cmn, absolute_path=True)
@@ -112,7 +107,7 @@ def main():
     
     # Spawn a thread for optical flow calculation.
     optflow_thread = threading.Thread(target=optflow.optflow,
-        args=(num_frames, flow_path, remote, local))
+        args=(num_frames, remote, local))
     optflow_thread.start()
     
     # Either read the cuts from disk or compute them manually (if applicable).
