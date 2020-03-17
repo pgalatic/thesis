@@ -10,7 +10,7 @@ bash install.sh
 
 # Test
 sudo mount -t drvfs 'O:' /mnt/o
-python3 thesis.py /mnt/o/thesis/ /mnt/o/thesis/floating360.mp4 /mnt/o/thesis/candy.pth --local_video=videos/floating360.mp4 --local_style=styles/candy.pth --no_cuts
+python3 thesis.py /mnt/o/thesis/ /mnt/o/thesis/floating360.mp4 /mnt/o/thesis/candy.pth --local_video=videos/floating360.mp4 --local_style=styles/candy.pth
 python3 thesis.py /mnt/o/thesis/ /mnt/o/thesis/zelda.mp4 /mnt/o/thesis/candy.pth --local_video=videos/zelda.mp4 --local_style=styles/candy.pth --test --no_cuts
 
 # 0 nodes
