@@ -28,7 +28,7 @@ def claim_job(remote, partitions):
     
         placeholder = str(remote / 'partition_{}.plc'.format(idx))
         # Check if someone has already claimed this partition.
-        if not os.path.isdir(placeholder):
+        if not os.path.exists(placeholder):
             try:
                 with open(placeholder, 'x') as handle:
                     handle.write('PLACEHOLDER CREATED BY {name}'.format(name=platform.node()))
@@ -86,7 +86,6 @@ def stylize(style, partitions, remote, local):
         frames_p = framefiles[partition[0]:partition[-1]]
         flows_p = flowfiles[partition[0]:partition[-1]]
         certs_p = certfiles[partition[0]:partition[-1]]
-        pdb.set_trace()
         
         # Spawn a thread to complete that job, then get the next one.
         to_run = threading.Thread(
