@@ -36,7 +36,7 @@ KNEE_THRESHOLD = 0.05
 # The maximum number of threading jobs to run simultaneously.
 MAX_OPTFLOW_JOBS = 8
 MAX_UPLOAD_JOBS = 8
-MAX_STYLIZATION_JOBS = 2 # experimental
+MAX_STYLIZATION_JOBS = 1 # experimental
 
 # This mean is used for preprocessing input to the stylization neural network.
 VGG_MEAN = [103.939, 116.779, 123.68]

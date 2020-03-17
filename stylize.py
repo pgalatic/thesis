@@ -58,25 +58,35 @@ def run_job(stylizer, framefiles, flowfiles, certfiles, remote, local, completin
     completing.append(complete)
     complete.start()
 
+def doublesort(fnames):
+    # End me.
+    return sorted(sorted(fnames), key=lambda y: len(y) if y else -1)
+
 def stylize(style, partitions, remote, local):
     # Sort in ascending order of length. This will mitigate the slowest-link effect of any weak nodes.
     # Sort in descending order of length. This will mitigate the slowdown caused by very large partitions.
-    partitions = sorted(partitions, key=lambda x: len(x), reverse=True)
+    # Don't sort at all.
+    # partitions = sorted(partitions, key=lambda x: len(x), reverse=True)
     
     running = []
     completing = []
     framefiles = sorted([str(local / name) for name in glob.glob1(str(local), '*.ppm')])
     # First flow/cert doesn't exist, so use None as a placeholder
-    flowfiles = [None] + sorted([str(remote / name) for name in glob.glob1(str(remote), 'backward*.flo')])
-    certfiles = [None] + sorted([str(remote / name) for name in glob.glob1(str(remote), 'reliable*.pgm')])
-    stylizer = core.StylizationModel(str(style))
+    flowfiles = [None] + doublesort([str(remote / name) for name in glob.glob1(str(remote), 'backward*.flo')])
+    certfiles = [None] + doublesort([str(remote / name) for name in glob.glob1(str(remote), 'reliable*.pgm')])
     
+    # Sanity checks
+    assert(len(framefiles) > 0 and len(flowfiles) > 0 and len(certfiles) > 0 
+            and len(framefiles) == len(flowfiles) and len(flowfiles) == len(certfiles))
+    
+    stylizer = core.StylizationModel(str(style))
     partition = claim_job(remote, partitions)
     
     while partition is not None:
         frames_p = framefiles[partition[0]:partition[-1]]
         flows_p = flowfiles[partition[0]:partition[-1]]
         certs_p = certfiles[partition[0]:partition[-1]]
+        pdb.set_trace()
         
         # Spawn a thread to complete that job, then get the next one.
         to_run = threading.Thread(

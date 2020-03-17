@@ -166,7 +166,10 @@ def upload_files(fnames, dst, absolute_path=False):
             logging.debug('\nFailed uploading {} -- OSError!'.format(fname), exc_info=True)
         finally:
             if os.path.exists(partname):
-                os.remove(partname)
+                try:
+                    os.remove(partname)
+                except FileNotFoundError:
+                    pass # File was already removed
             
 def wait_for(fname):
     '''
