@@ -78,7 +78,9 @@ def stylize(style, partitions, remote, local):
     # Sanity checks
     if not (len(framefiles) > 0 and len(flowfiles) > 0 and len(certfiles) > 0 
             and len(framefiles) == len(flowfiles) and len(flowfiles) == len(certfiles)):
-        pdb.set_trace() # Incongruency in lengths of file lists!
+        logging.error('Incongruency in lengths of file lists!\nframes:\t{}\nflows:\t{}\ncerts:\t{}'.format(
+            len(framefiles), len(flowfiles), len(certfiles)))
+        #pdb.set_trace()
     
     stylizer = core.StylizationModel(str(style))
     partition = claim_job(remote, partitions)
