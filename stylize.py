@@ -76,8 +76,9 @@ def stylize(style, partitions, remote, local):
     certfiles = [None] + doublesort([str(remote / name) for name in glob.glob1(str(remote), 'reliable*.pgm')])
     
     # Sanity checks
-    assert(len(framefiles) > 0 and len(flowfiles) > 0 and len(certfiles) > 0 
-            and len(framefiles) == len(flowfiles) and len(flowfiles) == len(certfiles))
+    if not (len(framefiles) > 0 and len(flowfiles) > 0 and len(certfiles) > 0 
+            and len(framefiles) == len(flowfiles) and len(flowfiles) == len(certfiles)):
+        pdb.set_trace() # Incongruency in lengths of file lists!
     
     stylizer = core.StylizationModel(str(style))
     partition = claim_job(remote, partitions)
