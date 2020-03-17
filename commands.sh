@@ -4,7 +4,7 @@
 # EXPERIMENT
 
 # Setup node
-git clone github.com/pgalatic/thesis.git
+git clone https://github.com/pgalatic/thesis.git
 cd thesis
 bash install.sh
 
