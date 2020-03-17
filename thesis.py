@@ -124,6 +124,9 @@ def main():
     # FIXME: Right now, the Torch stylization procedure crashes when it tries to use an incomplete file.
     # As a result, we have to join the thread in order to perform stylization.
     optflow_thread.join()
+    logging.info('Waiting for other nodes to finish optical flow...')
+    while len(glob.glob1(str(remote), '*.pgm')) + 1 < num_frames:
+        time.sleep(1)
     
     # Record the time between the preliminary setup and optflow calculations.
     # Calculating the frames is rolled into this, but that is so quick proportional to the video size that we can essentially ignore it.
@@ -133,9 +136,9 @@ def main():
     # Compute neural style transfer.
     stylize.stylize(style_path, partitions, remote, local)
     # Wait until all output files are present.
-    logging.info('Waiting for other nodes to finish...')
-    for idx in range(len(frames)):
-        common.wait_for(str(remote / (OUTPUT_FORMAT % (idx + 1))))
+    logging.info('Waiting for other nodes to finish stylization...')
+    while len(glob.glob1(str(remote), '*.png') < num_frames:
+        time.sleep(1)
     
     # Record the time between the optflow calculations and completing stylization.
     t_stylize = time.time()

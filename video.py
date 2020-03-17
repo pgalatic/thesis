@@ -63,6 +63,9 @@ def combine_frames(processor, reel, src, dst, extension='.mp4', lossless=False):
 
     # Don't try to combine frames if the destination already exists.
     # FFMPEG checks for this, but if we should preemptively avoid it if we can.
+    if os.path.exists(no_audio):
+        logging.info('{} already exists -- quitting'.format(audio))
+        return
     if os.path.exists(audio):
         logging.info('{} already exists -- quitting'.format(audio))
         return
