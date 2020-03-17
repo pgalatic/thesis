@@ -8,18 +8,16 @@ import os
 import pdb
 import glob
 import time
-import shutil
 import logging
 import pathlib
+import argparse
 import platform
 import threading
-import subprocess
 
 # EXTERNAL LIB
-import numpy as np
-from PIL import Image
 
 # LOCAL LIB
+import cut
 import common
 from core import core
 from const import *
@@ -98,4 +96,48 @@ def stylize(style, partitions, remote, local):
     logging.info('Wrapping up threads for stylization...')
     for thread in completing:
         thread.join()
+
+def parse_args():
+    '''Parses arguments.'''
+    ap = argparse.ArgumentParser()
+    
+    ap.add_argument('src', type=str,
+        help='The directory in which the .ppm files are stored.')
+    ap.add_argument('dst', type=str,
+        help='The directory in which to place the .flo, .pgm files.')
+    ap.add_argument('style', type=str,
+        help='The path to the model used for stylization as it would appear on the common directory, e.g. \\mnt\\o\\foo\\bar.pth')
         
+    # Optional arguments
+    ap.add_argument('--no_cuts', action='store_true',
+        help='Use for videos that have no cuts.')
+    ap.add_argument('--read_cuts', type=str, nargs='?', default=None,
+        help='The .csv file containing frames that denote cuts. Computing cuts manually is always more accurate than an automatic assessment, if time permits. Use video.py to split frames for manual inspection. [None]')
+    
+    return ap.parse_args()
+
+def main():
+    args = parse_args()
+    common.start_logging()
+    
+    src = pathlib.Path(args.src)
+    dst = pathlib.Path(args.dst)
+    style = pathlib.Path(args.style)
+    
+    frames = sorted([str(src / frame) for frame in glob.glob1(str(src), '*.ppm')])
+    
+    # Either read the cuts from disk or compute them manually (if applicable).
+    if args.no_cuts:
+        partitions = [(0, None)]
+    elif args.read_cuts:
+        partitions = cut.read_cuts(args.read_cuts, frames)
+    elif args.test:
+        midpoint = NUM_FRAMES_FOR_TEST // 2
+        partitions = [(0, midpoint), (midpoint, None)]
+    else:
+        partitions = cut.divide(frames, args.write_cuts)
+    
+    stylize(args.style, partitions, dst, src)
+
+if __name__ == '__main__':
+    main()

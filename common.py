@@ -1,6 +1,6 @@
 # author: Paul Galatic
 # 
-# Stores common functionality for the program.
+# Stores common functionality for the programs.
 #
 
 # STD LIB
@@ -13,7 +13,6 @@ import pickle
 import logging
 import pathlib
 import platform
-import threading
 
 # EXTERNAL LIB
 
@@ -21,10 +20,21 @@ import threading
 from const import *
 
 def start_logging():
+    '''
+    Begins Python's logging capabilities in a default configuration. Logs are appended to a 
+    logfile, and all logs are also printed to console.
+    '''
     logging.basicConfig(filename=LOGFILE, filemode='a', format=LOGFORMAT, level=logging.INFO)
     logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
 def makedirs(dirname):
+    '''
+    given:
+        dirname -> (pathlib.Path) the path to a directory
+    
+    attempts to create the directory, accounting for various situations when such an attempt will 
+        fail
+    '''
     # Convert from pathlib.Path to string if necessary.
     dirname = str(dirname)
     if not os.path.isdir(dirname):
@@ -37,6 +47,14 @@ def makedirs(dirname):
             raise
 
 def count_files(dir, extension):
+    '''
+    given:
+        dir         -> (pathlib.Path) a directory
+        extension   -> (str) an extention (.png, .ppm, etc)
+    
+    returns:
+        (int) the number of files in dir that end in that extention
+    '''
     return len(glob.glob1(str(dir), '*{}'.format(extension)))
 
 def wait_complete(tag, target, args, remote):
@@ -152,7 +170,11 @@ def upload_files(fnames, dst, absolute_path=False):
             
 def wait_for(fname):
     '''
-    WAIT until a file exists.
+    given:
+        fname -> (str) a filename
+    
+    halts the program until that file exists. NOTE: the file might not yet be complete, and other
+        measures are used to account for that
     '''
     # If you wish upon a star...
     logging.debug('Waiting for {}...'.format(fname))

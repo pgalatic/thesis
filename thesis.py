@@ -7,7 +7,6 @@
 # STD LIB
 import os
 import pdb
-import sys
 import glob
 import time
 import shutil
@@ -17,7 +16,6 @@ import argparse
 import threading
 
 # EXTERNAL LIB
-import numpy as np
 
 # LOCAL LIB
 import common
@@ -134,7 +132,8 @@ def main():
     
     # Compute neural style transfer.
     stylize.stylize(style_path, partitions, remote, local)
-    # Wait for all output files to be present.
+    # Wait until all output files are present.
+    logging.info('Waiting for other nodes to finish...')
     for idx in range(len(frames)):
         common.wait_for(str(remote / (OUTPUT_FORMAT % (idx + 1))))
     

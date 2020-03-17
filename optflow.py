@@ -1,15 +1,18 @@
 # author: Paul Galatic
 #
-# This module handles optical flow calculations.
+# This module handles optical flow calculations. These calculations are made using DeepMatching and
+# DeepFlow. Future versions may use FlowNet2 or other, faster, better-quality optical flow 
+# measures. The most important criteria is accuracy, and after that, speed.
 
 # STD LIB
 import os
 import re
-import sys
 import pdb
 import glob
 import time
 import logging
+import pathlib
+import argparse
 import platform
 import threading
 import subprocess
@@ -33,6 +36,10 @@ def most_recent_optflo(remote):
     return max(map(int, [re.findall(r'\d+', plc)[0] for plc in placeholders])) + 1
 
 def claim_job(remote, local, num_frames):
+    '''
+    All nodes involved are assumed to share a common directory. In this directory, placeholders
+    are created so that no two nodes work compute the same material. 
+    '''
     # Check the most recent available job.
     next_job = most_recent_optflo(remote)
     
@@ -68,36 +75,35 @@ def run_job(job, remote, local, put_thread, downsamp_factor='2'):
     
     logging.info('Computing optical flow for job {}.'.format(job))
     
-    start_local = str(local / (FRAME_NAME % job))
-    end_local = str(local / (FRAME_NAME % (job + 1)))
+    start = str(local / (FRAME_NAME % job))
+    end = str(local / (FRAME_NAME % (job + 1)))
     forward_name = str(local / 'forward_{i}_{j}.flo'.format(i=job, j=job+1))
     backward_name = str(local / 'backward_{j}_{i}.flo'.format(i=job, j=job+1))
-    reliable_forward = str(local / 'reliable_{i}_{j}.pgm'.format(i=job, j=job+1))
-    reliable_backward = str(local / 'reliable_{j}_{i}.pgm'.format(i=job, j=job+1))
+    reliable_name = str(local / 'reliable_{j}_{i}.pgm'.format(i=job, j=job+1))
         
     # Compute forward optical flow.
     logging.debug('Job {}: Forward optical flow'.format(job))
     forward_dm = subprocess.Popen([
-        './core/deepmatching-static', start_local, end_local, '-nt', '0', '-downscale', downsamp_factor
+        './core/deepmatching-static', start, end, '-nt', '0', '-downscale', downsamp_factor
     ], stdout=subprocess.PIPE)
-    forward_df = subprocess.run([
-        './core/deepflow2-static', start_local, end_local, forward_name, '-match'
+    subprocess.run([
+        './core/deepflow2-static', start, end, forward_name, '-match'
     ], stdin=forward_dm.stdout)
     
     # Compute backward optical flow.
     logging.debug('Job {}: Backward optical flow'.format(job))
     backward_dm = subprocess.Popen([
-        './core/deepmatching-static', end_local, start_local, '-nt', '0', '-downscale', downsamp_factor, '|',
+        './core/deepmatching-static', end, start, '-nt', '0', '-downscale', downsamp_factor, '|',
     ], stdout=subprocess.PIPE)
-    backward_df = subprocess.run([
-        './core/deepflow2-static', end_local, start_local, backward_name, '-match'
+    subprocess.run([
+        './core/deepflow2-static', end, start, backward_name, '-match'
     ], stdin=backward_dm.stdout)
     
     # Compute consistency check for backwards optical flow.
     logging.debug('Job {}: Consistency check.'.format(job))
-    con = subprocess.run([
+    subprocess.run([
         './core/consistencyChecker/consistencyChecker',
-        backward_name, forward_name, reliable_backward, end_local
+        backward_name, forward_name, reliable_name, end
     ])
     
     # Spawn a thread to put the produced files in the remote directory.
@@ -105,7 +111,7 @@ def run_job(job, remote, local, put_thread, downsamp_factor='2'):
     # TODO: Look at thread pools.
     # TODO: Assess time taken in various section of program (threads vs. bash commands?)
     # TODO: Determine which bash commands can be executed in parallel.
-    fnames = [forward_name, backward_name, reliable_backward]
+    fnames = [forward_name, backward_name, reliable_name]
     complete = threading.Thread(target=common.upload_files, args=(fnames, remote))
     put_thread.append(complete)
     complete.start()
@@ -140,3 +146,35 @@ def optflow(num_frames, remote, local):
         thread.join()
 
     logging.info('...optical flow calculations are finished.')
+
+def parse_args():
+    '''Parses arguments.'''
+    ap = argparse.ArgumentParser()
+    
+    ap.add_argument('src', type=str,
+        help='The directory in which the .ppm files are stored.')
+    ap.add_argument('dst', type=str,
+        help='The directory in which to place the .flo, .pgm files.')
+    
+    # Optional arguments
+    ap.add_argument('--test', action='store_true',
+        help='Compute optical flow over only a few frames to test functionality.')
+    
+    return ap.parse_args()
+
+def main():
+    args = parse_args()
+    common.start_logging()
+    
+    src = pathlib.Path(args.src)
+    dst = pathlib.Path(args.dst)
+    
+    if args.test:
+        num_frames = NUM_FRAMES_FOR_TEST
+    else:
+        num_frames = len(glob.glob1(str(src), '*.ppm'))
+    
+    optflow(num_frames, dst, src)
+
+if __name__ == '__main__':
+    main()

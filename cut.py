@@ -11,35 +11,15 @@ import glob
 import logging
 import pathlib
 import argparse
-import statistics
 
 # EXTERNAL LIB
 import numpy as np
 from PIL import Image
 
 # LOCAL LIB
-import common
 from const import *
 
 # TODO: https://pyscenedetect.readthedocs.io/en/latest/examples/usage-example/
-
-def parse_args():
-    '''Parses arguments.'''
-    ap = argparse.ArgumentParser()
-    
-    # Required arguments
-    ap.add_argument('src', type=str,
-        help='The path to the folder in which the frames are contained.')
-    
-    # Optional arguments
-    ap.add_argument('--extension', type=str, nargs='?', default='.ppm',
-        help='The extension of the frames in src. Change this if you only have, say, .png files [.ppm].')
-    ap.add_argument('--read_from', type=str, nargs='?', default=None,
-        help='The .csv file containing frames that denote cuts. Determining cuts manually is always more accurate than an automatic assessment, if time permits. Use video.py to split frames for manual inspection. [None]')
-    ap.add_argument('--write_to', type=str, nargs='?', default=None,
-        help='The .csv file in which to write automatically computed cuts for later reading [None].')
-    
-    return ap.parse_args()
 
 def kl_dist(frame1, frame2):
     # Uses Kullback-Liebler divergence as in Courbon et al. (2010).
@@ -108,6 +88,24 @@ def read_cuts(fname, frames):
     logging.debug('Number of partitions: {}'.format(len(partitions)))
     return partitions
 
+def parse_args():
+    '''Parses arguments.'''
+    ap = argparse.ArgumentParser()
+    
+    # Required arguments
+    ap.add_argument('src', type=str,
+        help='The path to the folder in which the frames are contained.')
+    
+    # Optional arguments
+    ap.add_argument('--extension', type=str, nargs='?', default='.ppm',
+        help='The extension of the frames in src. Change this if you only have, say, .png files [.ppm].')
+    ap.add_argument('--read_from', type=str, nargs='?', default=None,
+        help='The .csv file containing frames that denote cuts. Determining cuts manually is always more accurate than an automatic assessment, if time permits. Use video.py to split frames for manual inspection. [None]')
+    ap.add_argument('--write_to', type=str, nargs='?', default=None,
+        help='The .csv file in which to write automatically computed cuts for later reading [None].')
+    
+    return ap.parse_args()
+
 def main():
     args = parse_args()
     
@@ -122,7 +120,8 @@ def main():
     else:
         partitions = divide(frames, args.write_to)
     
-    pdb.set_trace() # This main() is used principally for debugging.
+    # This main() is used principally for debugging and variable inspection.
+    pdb.set_trace() 
 
 if __name__ == '__main__':
     main()
