@@ -114,7 +114,7 @@ def main():
     if args.no_cuts:
         partitions = [(0, None)]
     elif args.read_cuts:
-        partitions = cut.read_cuts(args.read_cuts, frames)
+        partitions = cut.read_cuts(args.read_cuts)
     elif args.test:
         midpoint = NUM_FRAMES_FOR_TEST // 2
         partitions = [(0, midpoint), (midpoint, None)]
