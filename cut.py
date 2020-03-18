@@ -24,7 +24,8 @@ from const import *
 def divide(video_path, write_to=None):
     video_manager = sd.video_manager.VideoManager([str(video_path)])
     scene_manager = sd.scene_manager.SceneManager()
-    scene_manager.add_detector(sd.detectors.ContentDetector())
+    scene_detector = sd.detectors.ContentDetector(threshold=45, min_scene_len=10)
+    scene_manager.add_detector(scene_detector)
     base_timecode = video_manager.get_base_timecode()
     
     try:
@@ -91,8 +92,7 @@ def main():
     else:
         partitions = divide(args.reel, args.write_to)
     
-    # This main() is used principally for debugging and variable inspection.
-    pdb.set_trace() 
+    logging.info(partitions)
 
 if __name__ == '__main__':
     main()

@@ -122,7 +122,7 @@ def parse_args():
         help='The path to the folder in which the frames are contained, if combining them.')
     ap.add_argument('--dst', type=str, default=None,
         help='The path to the folder in which the product(s) of the operation will be placed. By default, it will place products in a folder derived from the name of the reel.')
-    ap.add_argument('--extension', type=str, nargs='?', default='.ppm',
+    ap.add_argument('--extension', type=str, nargs='?', default='.png',
         help='The extension used for the frames of a split video. If performing manual cuts, set this to .png [.ppm].')
     ap.add_argument('--processor', type=str, nargs='?', default='ffmpeg',
         help='The video processer to use, either ffmpeg (preferred) or avconv (untested) [ffmpeg].')

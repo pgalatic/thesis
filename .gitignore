@@ -1,7 +1,6 @@
 *.t7
 *.pdf
 core/
-cuts/
 logs/
 out/
 products/
