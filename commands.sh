@@ -39,3 +39,6 @@ python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pg
 python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/eggdog.mp4 /proj/videorendering-PG0/pgalatic/WomanHat.pth --local_video=videos/eggdog.mp4 --local_style=styles/WomanHat.pth --local=/proj/videorendering-PG0/pgalatic/ --read_cuts=cuts/eggdog.csv
 # 18 cuts
 python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/zelda.mp4 /proj/videorendering-PG0/pgalatic/candy.pth --local_video=videos/zelda.mp4 --local_style=styles/candy.pth --local=/proj/videorendering-PG0/pgalatic/ --read_cuts=cuts/zelda.csv
+# 31 cuts
+python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/sekiro.mp4 /proj/videorendering-PG0/pgalatic/scream.pth --local_video=videos/sekiro.mp4 --local_style=styles/scream.pth --local=/proj/videorendering-PG0/pgalatic/ --read_cuts=cuts/sekiro.csv
+

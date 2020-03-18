@@ -137,7 +137,7 @@ def main():
     stylize.stylize(style_path, partitions, remote, local)
     # Wait until all output files are present.
     logging.info('Waiting for other nodes to finish stylization...')
-    while len(glob.glob1(str(remote), '*.png') < num_frames:
+    while len(glob.glob1(str(remote), '*.png')) < num_frames:
         time.sleep(1)
     
     # Record the time between the optflow calculations and completing stylization.
