@@ -8,7 +8,10 @@ git clone https://github.com/pgalatic/thesis.git
 cd thesis
 bash install.sh
 
-# Test
+# Test local
+python3 thesis.py out videos/floating360.mp4 styles/candy.pth --test
+
+# Test remote
 sudo mount -t drvfs 'O:' /mnt/o
 python3 thesis.py /mnt/o/thesis/ /mnt/o/thesis/floating360.mp4 /mnt/o/thesis/candy.pth --local_video=videos/floating360.mp4 --local_style=styles/candy.pth
 python3 thesis.py /mnt/o/thesis/ /mnt/o/thesis/zelda.mp4 /mnt/o/thesis/candy.pth --local_video=videos/zelda.mp4 --local_style=styles/candy.pth --test --no_cuts
@@ -25,20 +28,18 @@ time bash stylizeVideo.sh ../videos/night.mp4 ../styles/schlief.pth
 time bash stylizeVideo.sh ../videos/face.mp4 ../styles/scream.pth
 cd -
 
-# N nodes
-# 0 cuts
+# ava_cadu, WomanHat
 python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/ava_cadu.mp4 /proj/videorendering-PG0/pgalatic/WomanHat.pth --local_video=videos/ava_cadu.mp4 --local_style=styles/WomanHat.pth --local=/proj/videorendering-PG0/pgalatic/ --no_cuts
-# 1 cuts
+# chicken, picasso
 python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/chicken.mp4 /proj/videorendering-PG0/pgalatic/picasso.pth --local_video=videos/chicken.mp4 --local_style=styles/picasso.pth --local=/proj/videorendering-PG0/pgalatic/ --read_cuts=cuts/chicken.csv
-# 3 cuts
+# night, schlief
 python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/night.mp4 /proj/videorendering-PG0/pgalatic/schlief.pth --local_video=videos/night.mp4 --local_style=styles/schlief.pth --local=/proj/videorendering-PG0/pgalatic/ --read_cuts=cuts/night.csv
-# 4 cuts
+# face, scream
 python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/face.mp4 /proj/videorendering-PG0/pgalatic/scream.pth --local_video=videos/face.mp4 --local_style=styles/scream.pth --local=/proj/videorendering-PG0/pgalatic/ --read_cuts=cuts/face.csv
-
-# 13 cuts
+# eggdog, WomanHat
 python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/eggdog.mp4 /proj/videorendering-PG0/pgalatic/WomanHat.pth --local_video=videos/eggdog.mp4 --local_style=styles/WomanHat.pth --local=/proj/videorendering-PG0/pgalatic/ --read_cuts=cuts/eggdog.csv
-# 18 cuts
+# zelda, candy
 python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/zelda.mp4 /proj/videorendering-PG0/pgalatic/candy.pth --local_video=videos/zelda.mp4 --local_style=styles/candy.pth --local=/proj/videorendering-PG0/pgalatic/ --read_cuts=cuts/zelda.csv
-# 31 cuts
+# sekiro, scream
 python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/sekiro.mp4 /proj/videorendering-PG0/pgalatic/scream.pth --local_video=videos/sekiro.mp4 --local_style=styles/scream.pth --local=/proj/videorendering-PG0/pgalatic/ --read_cuts=cuts/sekiro.csv
-
+# 

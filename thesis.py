@@ -87,7 +87,7 @@ def main():
         elif not os.path.exists(str(dst)):
             # We do not have the master copy, so we have to wait for it to be uploaded, then copy it locally.
             common.wait_for(cmn)
-            shutil.copyfile(cmn, dst)
+            shutil.copyfile(str(cmn), str(dst))
     
     num_frames = video.split_frames(args.processor, video_path, local)
     # Split video into individual frames
@@ -116,8 +116,11 @@ def main():
     elif args.read_cuts:
         partitions = cut.read_cuts(args.read_cuts)
     elif args.test:
-        midpoint = NUM_FRAMES_FOR_TEST // 2
-        partitions = [(0, midpoint), (midpoint, None)]
+        # use different-size partitions to test sorting
+        q1 = (NUM_FRAMES_FOR_TEST // 4) 
+        q2 = (NUM_FRAMES_FOR_TEST // 3)
+        q3 = (NUM_FRAMES_FOR_TEST // 2)
+        partitions = [(0, q1), (q1, q2), (q2, q3), (q3, None)]
     else:
         partitions = common.wait_complete(DIVIDE_TAG, cut.divide, [video_path, args.write_cuts], remote)
         

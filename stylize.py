@@ -66,7 +66,7 @@ def stylize(style, partitions, remote, local):
     # Sort in ascending order of length. This will mitigate the slowest-link effect of any weak nodes.
     # Sort in descending order of length. This will mitigate the slowdown caused by very large partitions.
     # TODO Allow user to select sorting strategy
-    partitions = sorted(partitions, key=lambda x: -len(x))
+    partitions = sorted(partitions, key=lambda x: -(x[1] - x[0]) if x[1] else -99999)
     
     running = []
     completing = []

@@ -12,7 +12,7 @@ FRAME_NAME = 'frame_%05d.ppm'
 
 # When testing the algorithm, it is not immediately necessary to test it on a
 # full video; instead, it can be tested with the first few frames of a video.
-NUM_FRAMES_FOR_TEST = 188
+NUM_FRAMES_FOR_TEST = 15
 
 # The prefixes used by the core stylization procedure to denote the names of 
 # output images and upload them correctly to the common directory.
