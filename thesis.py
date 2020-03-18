@@ -119,7 +119,7 @@ def main():
         midpoint = NUM_FRAMES_FOR_TEST // 2
         partitions = [(0, midpoint), (midpoint, None)]
     else:
-        partitions = common.wait_complete(DIVIDE_TAG, cut.divide, [frames, args.write_cuts], remote)
+        partitions = common.wait_complete(DIVIDE_TAG, cut.divide, [video_path, args.write_cuts], remote)
         
     # FIXME: Right now, the Torch stylization procedure crashes when it tries to use an incomplete file.
     # As a result, we have to join the thread in order to perform stylization.
