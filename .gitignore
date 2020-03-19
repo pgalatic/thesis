@@ -4,8 +4,8 @@ core/
 logs/
 out/
 products/
-styles/
-videos/
+styles/*.pth
+videos/*.mp4
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

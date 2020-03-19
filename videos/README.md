@@ -11,7 +11,7 @@ The sources for the videos used in the assessment of my thesis are as follows:
 | zelda.mp4      | 899      | 18     | (ZELDA : Breath of the Wild - Official Japanese trailer HD)[https://www.youtube.com/watch?v=HyAWu86POpg]                          |
 | ori.mp4        | 1798     | 29     | (Ori and the Will of the Wisps - Official Gameplay Trailer | The Game Awards 2019)[https://www.youtube.com/watch?v=miJmKpzbls4]   |
 | smash.mp4      | 1802     | 3      | (Super Smash Bros. Ultimate - More Fighters Trailer)[https://www.youtube.com/watch?v=cjdfqXIM-Ko]                                 |
-| obra_dinn.mp4  | 1972     | 11     | (Return of the Obra Dinn - Nintendo Switch Reveal Trailer [HD 1080P])[https://www.youtube.com/watch?v=uzB-_Y-PAa8]                |
+| obra.mp4       | 1972     | 11     | (Return of the Obra Dinn - Nintendo Switch Reveal Trailer [HD 1080P])[https://www.youtube.com/watch?v=uzB-_Y-PAa8]                |
 | sekiro.mp4     | 2013     | 31     | (SEKIRO: SHADOWS DIE TWICE - Story Trailer 2019 (PS4))[https://www.youtube.com/watch?v=ejsPm03-cN4]                               |
 | pyre.mp4       | 2128     | 14     | (Pyre - E3 2016 Trailer)[https://www.youtube.com/watch?v=nQS-aimTcDI]                                                             |
 | bastion.mp4    | 2128     | 15     | (Bastion - Official Trailer)[https://www.youtube.com/watch?v=mX48y24t9iU]                                                         |
