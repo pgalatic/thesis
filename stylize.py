@@ -121,6 +121,8 @@ def parse_args():
         help='The path to the model used for stylization as it would appear on the common directory, e.g. \\mnt\\o\\foo\\bar.pth')
         
     # Optional arguments
+    ap.add_argument('--test', action='store_true',
+        help='Test the algorithm by stylizing only a few frames of the video, rather than all of the frames.')
     ap.add_argument('--no_cuts', action='store_true',
         help='Use for videos that have no cuts.')
     ap.add_argument('--read_cuts', type=str, nargs='?', default=None,
