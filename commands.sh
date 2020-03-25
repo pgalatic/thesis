@@ -16,17 +16,14 @@ sudo mount -t drvfs 'O:' /mnt/o
 python3 thesis.py /mnt/o/thesis/ /mnt/o/thesis/floating360.mp4 /mnt/o/thesis/candy.pth --local_video=videos/floating360.mp4 --local_style=styles/candy.pth
 python3 thesis.py /mnt/o/thesis/ /mnt/o/thesis/zelda.mp4 /mnt/o/thesis/candy.pth --local_video=videos/zelda.mp4 --local_style=styles/candy.pth --test --no_cuts
 
-# 0 nodes
 # 0 cuts
-cd core
-time bash stylizeVideo.sh ../videos/ava_cadu.mp4 ../styles/WomanHat.pth
+time bash stylizeVideo_deepflow.sh videos/ava_cadu.mp4 models/checkpoint-mosaic-video.t7
 # 1 cuts
-time bash stylizeVideo.sh ../videos/chicken.mp4 ../styles/picasso.pth
+time bash stylizeVideo_deepflow.sh videos/chicken.mp4 models/checkpoint-mosaic-video.t7
 # 3 cuts
-time bash stylizeVideo.sh ../videos/night.mp4 ../styles/schlief.pth
+time bash stylizeVideo_deepflow.sh videos/night.mp4 models/checkpoint-mosaic-video.t7
 # 4 cuts
-time bash stylizeVideo.sh ../videos/face.mp4 ../styles/scream.pth
-cd -
+time bash stylizeVideo_deepflow.sh videos/face.mp4 models/checkpoint-scream-video.t7
 
 # ava_cadu, WomanHat
 python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/ava_cadu.mp4 /proj/videorendering-PG0/pgalatic/WomanHat.pth --local_video=videos/ava_cadu.mp4 --local_style=styles/WomanHat.pth --local=/proj/videorendering-PG0/pgalatic/ --no_cuts

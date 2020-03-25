@@ -149,6 +149,7 @@ def main():
         midpoint = NUM_FRAMES_FOR_TEST // 2
         partitions = [(0, midpoint), (midpoint, None)]
     else:
+        # FIXME: Bug when trying to stylize locally in a video with no cuts.
         partitions = cut.divide(frames, args.write_cuts)
     
     stylize(args.style, partitions, dst, src)

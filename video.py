@@ -64,7 +64,7 @@ def combine_frames(processor, reel, src, dst, extension='.mp4', lossless=False):
     # Don't try to combine frames if the destination already exists.
     # FFMPEG checks for this, but if we should preemptively avoid it if we can.
     if os.path.exists(no_audio):
-        logging.info('{} already exists -- quitting'.format(audio))
+        logging.info('{} already exists -- quitting'.format(no_aduio))
         return
     if os.path.exists(audio):
         logging.info('{} already exists -- quitting'.format(audio))
@@ -74,6 +74,7 @@ def combine_frames(processor, reel, src, dst, extension='.mp4', lossless=False):
     check_deps(processor)
 
     # Get the original video's length. This will be necessary to properly reconstruct it.
+    # TODO: Check to see if a video contains audio before attempting to add audio.
     probe = ffprobe3.FFProbe(str(reel))
     duration = probe.streams[-1].duration
     num_frames = str(probe.streams[0].nb_frames)

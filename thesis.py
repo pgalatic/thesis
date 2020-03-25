@@ -101,15 +101,6 @@ def main():
         for frame in to_remove:
             os.remove(frame)
     
-    # Record the time between the start of the program and preliminary setup.
-    t_prelim = time.time()
-    logging.info('{} seconds\tpreliminary setup'.format(round(t_prelim - t_start)))
-    
-    # Spawn a thread for optical flow calculation.
-    optflow_thread = threading.Thread(target=optflow.optflow,
-        args=(num_frames, remote, local))
-    optflow_thread.start()
-    
     # Either read the cuts from disk or compute them manually (if applicable).
     if args.no_cuts:
         partitions = [(0, None)]
@@ -123,6 +114,15 @@ def main():
         partitions = [(0, q1), (q1, q2), (q2, q3), (q3, None)]
     else:
         partitions = common.wait_complete(DIVIDE_TAG, cut.divide, [video_path, args.write_cuts], remote)
+    
+    # Record the time between the start of the program and preliminary setup.
+    t_prelim = time.time()
+    logging.info('{} seconds\tpreliminary setup'.format(round(t_prelim - t_start)))
+    
+    # Spawn a thread for optical flow calculation.
+    optflow_thread = threading.Thread(target=optflow.optflow,
+        args=(num_frames, remote, local))
+    optflow_thread.start()
         
     # FIXME: Right now, the Torch stylization procedure crashes when it tries to use an incomplete file.
     # As a result, we have to join the thread in order to perform stylization.
