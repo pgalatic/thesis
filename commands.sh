@@ -55,4 +55,6 @@ python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pg
 python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/bastion.mp4 /proj/videorendering-PG0/pgalatic/schlief.pth --local_video=videos/bastion.mp4 --local_style=styles/schlief.pth --local=/proj/videorendering-PG0/pgalatic/ --read_cuts=cuts/bastion.csv
 
 # ai, schlief
-python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/ai.mp4 /proj/videorendering-PG0/pgalatic/schlief.pth --local_video=videos/ai.mp4 --local_style=schlief.pth --local=/proj/videorendering-PG0/pgalatic/ --no_cuts
+python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/ai.mp4 /proj/videorendering-PG0/pgalatic/schlief.pth --local_video=videos/ai.mp4 --local_style=styles/schlief.pth --local=/proj/videorendering-PG0/pgalatic/ --no_cuts
+# dance, picasso
+python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/dance.mp4 /proj/videorendering-PG0/pgalatic/picasso.pth --local_video=videos/dance.mp4 --local_style=styles/picasso.pth --local=/proj/videorendering-PG0/pgalatic/ --read_cuts=cuts/dance.csv

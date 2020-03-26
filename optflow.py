@@ -99,21 +99,19 @@ def farneback(start_name, end_name):
 
 def deepflow(start_name, end_name, downsamp_factor='2'):
     # Compute forward optical flow.
-    logging.debug('Job {}: Forward optical flow'.format(job))
     forward_dm = subprocess.Popen([
-        './core/deepmatching-static', start, end, '-nt', '0', '-downscale', downsamp_factor
+        './core/deepmatching-static', start_name, end_name, '-nt', '0', '-downscale', downsamp_factor
     ], stdout=subprocess.PIPE)
     subprocess.run([
-        './core/deepflow2-static', start, end, forward_name, '-match'
+        './core/deepflow2-static', start_name, end_name, forward_name, '-match'
     ], stdin=forward_dm.stdout)
     
     # Compute backward optical flow.
-    logging.debug('Job {}: Backward optical flow'.format(job))
     backward_dm = subprocess.Popen([
-        './core/deepmatching-static', end, start, '-nt', '0', '-downscale', downsamp_factor, '|',
+        './core/deepmatching-static', end_name, start_name, '-nt', '0', '-downscale', downsamp_factor, '|',
     ], stdout=subprocess.PIPE)
     subprocess.run([
-        './core/deepflow2-static', end, start, backward_name, '-match'
+        './core/deepflow2-static', end_name, start_name, backward_name, '-match'
     ], stdin=backward_dm.stdout)
 
 def run_job(job, remote, local, put_thread, fast=False):
