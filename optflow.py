@@ -18,6 +18,8 @@ import threading
 import subprocess
 
 # EXTERNAL LIB
+import cv2
+import numpy as np
 
 # LOCAL LIB
 import common
@@ -69,18 +71,33 @@ def claim_job(remote, local, num_frames):
     # There are no more jobs.
     return None
 
-def run_job(job, remote, local, put_thread, downsamp_factor='2'):
-    if job == None or job < 0:
-        raise Exception('Bad job passed to run_job: {}'.format(job))
+def write_flow(fname, flow):
+    """Write optical flow to a .flo file
+    Args:
+        flow: optical flow
+        dst_file: Path where to write optical flow
+    """
+    # Save optical flow to disk
+    with open(fname, 'wb') as f:
+        np.array(202021.25, dtype=np.float32).tofile(f)
+        height, width = flow.shape[:2]
+        np.array(width, dtype=np.uint32).tofile(f)
+        np.array(height, dtype=np.uint32).tofile(f)
+        flow.astype(np.float32).tofile(f)
+
+def farneback(start_name, end_name):
+    start = cv2.cvtColor(cv2.imread(start_name), cv2.COLOR_BGR2GRAY)
+    end = cv2.cvtColor(cv2.imread(end_name), cv2.COLOR_BGR2GRAY)
     
-    logging.info('Computing optical flow for job {}.'.format(job))
+    # Compute forward optical flow.
+    forward = cv2.calcOpticalFlowFarneback(start, end, None, 0.5, 3, 15, 3, 5, 1.2, 0)
+    # Compute backward optical flow.
+    backward = cv2.calcOpticalFlowFarneback(end, start, None, 0.5, 3, 15, 3, 5, 1.2, 0)
     
-    start = str(local / (FRAME_NAME % job))
-    end = str(local / (FRAME_NAME % (job + 1)))
-    forward_name = str(local / 'forward_{i}_{j}.flo'.format(i=job, j=job+1))
-    backward_name = str(local / 'backward_{j}_{i}.flo'.format(i=job, j=job+1))
-    reliable_name = str(local / 'reliable_{j}_{i}.pgm'.format(i=job, j=job+1))
-        
+    write_flow(forward_name, forward)
+    write_flow(backward_name, backward)
+
+def deepflow(start_name, end_name, downsamp_factor='2'):
     # Compute forward optical flow.
     logging.debug('Job {}: Forward optical flow'.format(job))
     forward_dm = subprocess.Popen([
@@ -98,19 +115,34 @@ def run_job(job, remote, local, put_thread, downsamp_factor='2'):
     subprocess.run([
         './core/deepflow2-static', end, start, backward_name, '-match'
     ], stdin=backward_dm.stdout)
+
+def run_job(job, remote, local, put_thread, fast=False):
+    if job == None or job < 0:
+        raise Exception('Bad job passed to run_job: {}'.format(job))
+    
+    logging.info('Computing optical flow for job {}.'.format(job))
+    
+    start_name = str(local / (FRAME_NAME % job))
+    end_name = str(local / (FRAME_NAME % (job + 1)))
+    forward_name = str(local / 'forward_{i}_{j}.flo'.format(i=job, j=job+1))
+    backward_name = str(local / 'backward_{j}_{i}.flo'.format(i=job, j=job+1))
+    reliable_name = str(local / 'reliable_{j}_{i}.pgm'.format(i=job, j=job+1))
+    
+    if fast:
+        farneback(start_name, end_name)
+    else:
+        deepflow(start_name, end_name)
     
     # Compute consistency check for backwards optical flow.
     logging.debug('Job {}: Consistency check.'.format(job))
     subprocess.run([
         './core/consistencyChecker/consistencyChecker',
-        backward_name, forward_name, reliable_name, end
+        backward_name, forward_name, reliable_name, end_name
     ])
     
     # Spawn a thread to put the produced files in the remote directory.
     # TODO: Reduce thread creation overhead by having one background thread operating on a list?
     # TODO: Look at thread pools.
-    # TODO: Assess time taken in various section of program (threads vs. bash commands?)
-    # TODO: Determine which bash commands can be executed in parallel.
     fnames = [forward_name, backward_name, reliable_name]
     complete = threading.Thread(target=common.upload_files, args=(fnames, remote))
     put_thread.append(complete)

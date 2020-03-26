@@ -28,13 +28,14 @@ def divide(video_path, write_to=None):
     scene_manager.add_detector(scene_detector)
     base_timecode = video_manager.get_base_timecode()
     
+    partitions = []
+    
     try:
         video_manager.set_downscale_factor()
         video_manager.start()
         scene_manager.detect_scenes(frame_source=video_manager)
         
         scene_list = scene_manager.get_scene_list(base_timecode)
-        partitions = []
         logging.info('Number of partitions: {}'.format(len(scene_list)))
         for idx, scene in enumerate(scene_list):
             start, end = scene[0].get_frames(), scene[1].get_frames()
@@ -48,6 +49,8 @@ def divide(video_path, write_to=None):
         
     finally:
         video_manager.release()
+    
+    return partitions
 
 def read_cuts(fname):
     with open(fname, 'r') as f:

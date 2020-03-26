@@ -53,3 +53,6 @@ python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pg
 python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/transistor.mp4 /proj/videorendering-PG0/pgalatic/mosaic.pth --local_video=videos/transistor.mp4 --local_style=styles/mosaic.pth --local=/proj/videorendering-PG0/pgalatic/ --read_cuts=cuts/transistor.csv
 # bastion, schlief
 python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/bastion.mp4 /proj/videorendering-PG0/pgalatic/schlief.pth --local_video=videos/bastion.mp4 --local_style=styles/schlief.pth --local=/proj/videorendering-PG0/pgalatic/ --read_cuts=cuts/bastion.csv
+
+# ai, schlief
+python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/ai.mp4 /proj/videorendering-PG0/pgalatic/schlief.pth --local_video=videos/ai.mp4 --local_style=schlief.pth --local=/proj/videorendering-PG0/pgalatic/ --no_cuts
