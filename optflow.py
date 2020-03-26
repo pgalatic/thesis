@@ -85,7 +85,7 @@ def write_flow(fname, flow):
         np.array(height, dtype=np.uint32).tofile(f)
         flow.astype(np.float32).tofile(f)
 
-def farneback(start_name, end_name):
+def farneback(start_name, end_name, forward_name, backward_name):
     start = cv2.cvtColor(cv2.imread(start_name), cv2.COLOR_BGR2GRAY)
     end = cv2.cvtColor(cv2.imread(end_name), cv2.COLOR_BGR2GRAY)
     
@@ -97,7 +97,7 @@ def farneback(start_name, end_name):
     write_flow(forward_name, forward)
     write_flow(backward_name, backward)
 
-def deepflow(start_name, end_name, downsamp_factor='2'):
+def deepflow(start_name, end_name, forward_name, backward_name, downsamp_factor='2'):
     # Compute forward optical flow.
     forward_dm = subprocess.Popen([
         './core/deepmatching-static', start_name, end_name, '-nt', '0', '-downscale', downsamp_factor
@@ -127,9 +127,9 @@ def run_job(job, remote, local, put_thread, fast=False):
     reliable_name = str(local / 'reliable_{j}_{i}.pgm'.format(i=job, j=job+1))
     
     if fast:
-        farneback(start_name, end_name)
+        farneback(start_name, end_name, forward_name, backward_name)
     else:
-        deepflow(start_name, end_name)
+        deepflow(start_name, end_name, forward_name, backward_name)
     
     # Compute consistency check for backwards optical flow.
     logging.debug('Job {}: Consistency check.'.format(job))
