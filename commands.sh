@@ -68,11 +68,11 @@ python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pg
 # eggdog, WomanHat
 python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/eggdog.mp4 /proj/videorendering-PG0/pgalatic/WomanHat.pth --local_video=videos/eggdog.mp4 --local_style=styles/WomanHat.pth --local=/proj/videorendering-PG0/pgalatic/ --read_cuts=cuts/eggdog.csv
 # infinity, scream
-python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/infinity.mp4 /proj/videorendering-PG0/pgalatic/scream.pth --local_video=videos/infinity.mp4 --local_styles=styles/scream.pth --local=/proj/videorendering-PG0/pgalatic/ --read_cuts=cuts/infinity.csv
-# ncis, picasso
-python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/ncis.mp4 /proj/videorendering-PG0/pgalatic/picasso.pth --local_video=videos/ncis.mp4 --local_style=styles/picasso.pth --local=/proj/videorendering-PG0/pgalatic/ --read_cuts=cuts/ncis.csv
+python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/infinity.mp4 /proj/videorendering-PG0/pgalatic/scream.pth --local_video=videos/infinity.mp4 --local_style=styles/scream.pth --local=/proj/videorendering-PG0/pgalatic/ --read_cuts=cuts/infinity.csv
 # zelda, candy
 python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/zelda.mp4 /proj/videorendering-PG0/pgalatic/candy.pth --local_video=videos/zelda.mp4 --local_style=styles/candy.pth --local=/proj/videorendering-PG0/pgalatic/ --read_cuts=cuts/zelda.csv
+# ncis, picasso
+python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/ncis.mp4 /proj/videorendering-PG0/pgalatic/picasso.pth --local_video=videos/ncis.mp4 --local_style=styles/picasso.pth --local=/proj/videorendering-PG0/pgalatic/ --read_cuts=cuts/ncis.csv
 
 # roll, mosaic
 python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/roll.mp4 /proj/videorendering-PG0/pgalatic/mosaic.pth --local_video=videos/roll.mp4 --local_style=styles/mosaic.pth --local=/proj/videorendering-PG0/pgalatic/ --read_cuts=cuts/roll.csv
@@ -99,4 +99,4 @@ python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pg
 # transistor, mosaic
 python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/transistor.mp4 /proj/videorendering-PG0/pgalatic/mosaic.pth --local_video=videos/transistor.mp4 --local_style=styles/mosaic.pth --local=/proj/videorendering-PG0/pgalatic/ --read_cuts=cuts/transistor.csv
 # hatkid, schlief
-python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/hatkid.mp4 --local_video=videos/hatkid.mp4 --local_style=styles/schlief.pth --local=/proj/videorendering-PG0/pgalatic/ --read_cuts=cuts/hatkid.csv
+python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/hatkid.mp4 /proj/videorendering-PG0/pgalatic/schlief.pth --local_video=videos/hatkid.mp4 --local_style=styles/schlief.pth --local=/proj/videorendering-PG0/pgalatic/ --read_cuts=cuts/hatkid.csv

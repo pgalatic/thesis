@@ -12,7 +12,7 @@ The sources for the videos used in the assessment of my thesis are as follows:
 | sneeze.mp4     | 208      | 0      | [Ron sneezes and scares deer](https://www.youtube.com/watch?v=MUINFs1Sp94)                                                        |
 | wow.mp4        | 208      | 0      | [Greenscreen Eddy WOW](https://www.youtube.com/watch?v=9xG5EXxFSiQ)                                                               |
 | dance.mp4      | 230      | 1      | [Freestyle Dance Teacher](https://www.youtube.com/watch?v=ZkNMZlkrzaU)                                                            |
-| fad.mp4        | 308      | 11     | [Squangwork and Squigorf](https://www.youtube.com/watch?v=eotLQbeyGx4)                                                            |
+| fad.mp4        | 308      | 10     | [Squangwork and Squigorf](https://www.youtube.com/watch?v=eotLQbeyGx4)                                                            |
 | meowth.mp4     | 431      | 3      | [meowth ascends](https://www.youtube.com/watch?v=tAZMDz2Y7Nk)                                                                     |
 | kiwi.mp4       | 466      | 5      | [🥝](https://www.youtube.com/watch?v=j1B_ScRYU4I)                                                                                 |
 | walk.mp4       | 500      | 12     | [he walk](https://www.youtube.com/watch?v=xa1Zn6XrDlM)                                                                            |

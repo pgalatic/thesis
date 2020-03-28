@@ -14,8 +14,10 @@ import argparse
 
 # EXTERNAL LIB
 import cv2
+import ffprobe3
 import numpy as np
 import scenedetect as sd
+from scipy import stats
 
 # LOCAL LIB
 import common
@@ -86,6 +88,16 @@ def parse_args():
     
     return ap.parse_args()
 
+def sfp(reel, partitions=None):
+    probe = ffprobe3.FFProbe(str(reel))
+    num_frames = int(probe.streams[0].nb_frames)
+    if not partitions: return num_frames
+    partitions[-1] = (partitions[-1][0], num_frames)
+    norm_partitions = [(partition[1] - partition[0]) / num_frames for partition in partitions]
+    entropy = stats.entropy(norm_partitions, base=len(partitions))
+    
+    return num_frames / (1 + ((len(partitions) - 1) * entropy**2))
+
 def main():
     args = parse_args()
     common.start_logging()
@@ -95,7 +107,12 @@ def main():
     else:
         partitions = divide(args.reel, args.write_to)
     
+    probe = ffprobe3.FFProbe(str(args.reel))
+    num_frames = int(probe.streams[0].nb_frames)
+    
+    partitions[-1] = (partitions[-1][0], num_frames)
     logging.info(partitions)
 
 if __name__ == '__main__':
     main()
+    
