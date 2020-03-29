@@ -3,7 +3,8 @@
 core/
 logs/
 out/
-products/
+products/*.mp4
+products/test/
 styles/*.pth
 videos/*.mp4
 

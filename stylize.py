@@ -5,11 +5,11 @@
 # Dosovitskiy. It organizes and executes divide-and-conquer style transfer.
 
 # STD LIB
-import re
 import os
 import pdb
 import glob
 import time
+import pickle
 import logging
 import pathlib
 import argparse
@@ -20,22 +20,63 @@ import threading
 
 # LOCAL LIB
 import cut
-import video
-import common
 from const import *
-from core import model, optflow
+from core import model, optflow, video, styutils
 
-def most_recent_partition(remote):
-    # Check to see if the optical flow folder exists.
-    if not os.path.isdir(str(remote)):
-        # If it doesn't exist, then there are no optflow files, and we start from scratch.
-        return 1
-
-    # The most recent partition is the most recent placeholder plus 1.
-    placeholders = glob.glob1(str(remote), 'partition_*.plc')
-    if len(placeholders) == 0: return 1
+def wait_complete(tag, target, args, remote):
+    '''
+    A function used to ensure that only one of N nodes completes a given task.
     
-    return max(map(int, [re.findall(r'\d+', plc)[0] for plc in placeholders])) + 1
+    given:
+        tag     -> (str) the name of the file results should be written to and
+                    read from
+        target  -> (func) the function that only one node should execute
+        args    -> (list:Object) the arguments to feed into the target function
+        remote  -> (pathlib.Path) the common directory where results should be 
+                    written to and read from
+    returns:
+        (Object) the product of target given args, either as computed by the 
+            current node or as read from the common directory
+    '''
+    # Try to create a placeholder so that two nodes don't try to do the same job at once.
+    placeholder = str(remote / (tag + '.plc'))
+    write_to = str(remote / tag)
+    
+    try:
+        # If either of these exist, it means that the result is being worked on, and we should fall through.
+        if os.path.exists(placeholder) or os.path.exists(write_to):
+            raise FileExistsError('{} or {} already exist -- don\'t panic! Waiting for output...'.format(placeholder, write_to))
+    
+        # This will only succeed if this program successfully created the placeholder.
+        with open(placeholder, 'x') as handle:
+            handle.write('PLACEHOLDER CREATED BY {name}'.format(name=platform.node()))
+        
+        logging.info('Job claimed: {}'.format(tag))
+        # Run the function.
+        result = target(*args)
+        
+        # Write the output to disk.
+        with open(write_to, 'wb') as handle:
+            if result != None:
+                pickle.dump(result, handle)
+            else:
+                pickle.dump(tag, handle)
+        
+        return result
+    except FileExistsError:
+        # We couldn't claim that job, so WAIT until it's finished, then return None.
+        logging.info('Job {} already claimed; waiting for output...'.format(tag))
+        # Until the placeholder is gone, the file may still be incompletely uploaded.
+        while os.path.exists(placeholder):
+            time.sleep(1)
+            write_to = str(remote / tag)
+        
+        with open(write_to, 'rb') as handle:
+            return pickle.load(handle)
+    finally:
+        # Remove the placeholder in either case.
+        if os.path.exists(placeholder):
+            os.remove(placeholder)
 
 def claim_job(remote, partitions):
     for idx, partition in enumerate(partitions):
@@ -62,11 +103,10 @@ def claim_job(remote, partitions):
     # There are no more jobs.
     return None
 
-def stylize(style, partitions, remote):
-    # Sort in ascending order of length. This will mitigate the slowest-link effect of any weak nodes.
+def stylize(style, partitions, remote, fast):
     # Sort in descending order of length. This will mitigate the slowdown caused by very large partitions.
     # TODO Allow user to select sorting strategy
-    # partitions = sorted(partitions, key=lambda x: -(x[1] - x[0]) if x[1] else -99999)
+    partitions = sorted(partitions, key=lambda x: x[1] - x[0], reverse=True)
     
     running = []
 
@@ -79,7 +119,7 @@ def stylize(style, partitions, remote):
         # Spawn a thread to complete that job, then get the next one.
         to_run = threading.Thread(
             target=stylizer.stylize, 
-            args=(partition[0], frames_p, remote))
+            args=(partition[0], frames_p, remote, fast))
         running.append(to_run)
         to_run.start()
         
@@ -91,10 +131,10 @@ def stylize(style, partitions, remote):
         partition = claim_job(remote, partitions)
     
     # Finish any remaining optical flow, to help speed along other nodes, if necessary.
-    if most_recent_partition(remote) < len(partitions):
+    if optflow.most_recent_optflow(remote) < styutils.count_files(remote, '.ppm'):
         for partition in partitions:
             frames_p = framefiles[partition[0]:partition[-1]]
-            optflow.optflow(0, frames_p, remote)
+            optflow.optflow(0, frames_p, remote, fast)
     
     # Join all remaining threads.
     logging.info('Wrapping up threads for stylization...')
@@ -107,19 +147,21 @@ def parse_args():
     
     # Required arguments
     ap.add_argument('remote', type=str,
-        help='The directory common to all nodes, e.g. \\mnt\\o\\foo\\.')
+        help='The directory common to all nodes, e.g. out/.')
     ap.add_argument('video', type=str,
-        help='The path to the stylization target, e.g. \\mnt\\o\\foo\\bar.mp4\\')
+        help='The path to the stylization target, e.g. out/foo.mp4')
     ap.add_argument('style', type=str,
-        help='The path to the model used for stylization, e.g. \\mnt\\o\\foo\\bar.pth')
+        help='The path to the model used for stylization, e.g. out/bar.pth')
     
     # Optional arguments
     ap.add_argument('--test', action='store_true',
         help='Test the algorithm by stylizing only a few frames of the video, rather than all of the frames.')
+    ap.add_argument('--fast', action='store_true',
+        help='Use Farneback optical flow, which is faster than the default, DeepFlow2.')
     ap.add_argument('--no_cuts', action='store_true',
-        help='If a video has no cuts, use this to parallelize only the optical flow calculations.')
+        help='If a video has no cuts, use this to denote that and skip unnecessary computation.')
     ap.add_argument('--read_cuts', type=str, nargs='?', default=None,
-        help='The .csv file containing frames that denote cuts. Computing cuts manually is always more accurate than an automatic assessment, if time permits. Use video.py to split frames for manual inspection. [None]')
+        help='The .csv file containing frames that denote cuts. Computing cuts manually is always more accurate than an automatic assessment, if time permits. Use video.py to split frames for manual inspection. Use cut.py to compute and write cuts to disk. [None]')
     
     return ap.parse_args()
 
@@ -127,15 +169,15 @@ def main():
     '''Driver program.'''
     t_start = time.time()
     args = parse_args()
-    common.start_logging()
+    styutils.start_logging()
     logging.info('\n-----START {} -----'.format(os.path.basename(args.video)))
     
     # Make output folder(s), if necessary
     remote = pathlib.Path(args.remote) / os.path.basename(os.path.splitext(args.video)[0])
-    common.makedirs(remote)
+    styutils.makedirs(remote)
     
-    video.split_frames(args.video, remote)
     # Split video into individual frames
+    wait_complete(SPLIT_TAG, video.split_frames, [args.video, remote], remote)
     frames = sorted([str(remote / frame) for frame in glob.glob1(str(remote), '*.ppm')])
     
     # Make sure we only test on a small number of files, if we are testing.
@@ -157,15 +199,14 @@ def main():
         q3 = (NUM_FRAMES_FOR_TEST // 2)
         partitions = [(0, q1), (q1, q2), (q2, q3), (q3, None)]
     else:
-        partitions = common.wait_complete(
-            DIVIDE_TAG, cut.divide, [args.video, len(frames)], remote)
+        partitions = wait_complete(DIVIDE_TAG, cut.divide, [args.video, len(frames)], remote)
     
     # Record the time between the start of the program and preliminary setup.
     t_prelim = time.time()
     logging.info('{} seconds\tpreliminary setup'.format(round(t_prelim - t_start)))
     
     # Compute neural style transfer.
-    stylize(args.style, partitions, remote)
+    stylize(args.style, partitions, remote, args.fast)
     # Wait until all output files are present.
     logging.info('Waiting for other nodes to finish stylization...')
     while len(glob.glob1(str(remote), '*.png')) < len(frames):
@@ -177,11 +218,11 @@ def main():
     
     # Combining frames into a final video won't work if we're testing on only a portion of the frames.
     if not args.test:
-        video.combine_frames(args.video, remote)
+        wait_complete(COMBINE_TAG, video.combine_frames, [args.video, remote], remote)
     
     # Clean up any lingering files.
-    if os.path.exists(DIVIDE_TAG):
-        os.remove(DIVIDE_TAG)
+    for fname in [str(remote / name) for name in glob.glob1(str(remote), '*.pkl')]:
+        os.remove(fname)
     for fname in [str(remote / name) for name in glob.glob1(str(remote), '*.ppm')]:
         os.remove(fname)
     #for fname in [str(remote / name) for name in glob.glob1(str(remote), '*.plc')]:

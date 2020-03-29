@@ -15,7 +15,7 @@ import scenedetect as sd
 from scipy import stats
 
 # LOCAL LIB
-import common
+from core import styutils
 
 def divide(video_path, num_frames, write_to=None):
     video_manager = sd.video_manager.VideoManager([str(video_path)])
@@ -63,6 +63,17 @@ def write_cuts(write_to, partitions):
             wtr.writerow([partition[1]])
     logging.info('...Wrote keys to {}.'.format(write_to))
 
+def sfp(reel, partitions=None):
+    '''Standard frames per partition'''
+    probe = ffprobe3.FFProbe(str(reel))
+    num_frames = int(probe.streams[0].nb_frames)
+    if not partitions: return num_frames
+    partitions[-1] = (partitions[-1][0], num_frames)
+    norm_partitions = [(partition[1] - partition[0]) / num_frames for partition in partitions]
+    entropy = stats.entropy(norm_partitions, base=len(partitions))
+    
+    return num_frames / (1 + ((len(partitions) - 1) * entropy**2))
+
 def parse_args():
     '''Parses arguments.'''
     ap = argparse.ArgumentParser()
@@ -81,19 +92,9 @@ def parse_args():
     
     return ap.parse_args()
 
-def sfp(reel, partitions=None):
-    probe = ffprobe3.FFProbe(str(reel))
-    num_frames = int(probe.streams[0].nb_frames)
-    if not partitions: return num_frames
-    partitions[-1] = (partitions[-1][0], num_frames)
-    norm_partitions = [(partition[1] - partition[0]) / num_frames for partition in partitions]
-    entropy = stats.entropy(norm_partitions, base=len(partitions))
-    
-    return num_frames / (1 + ((len(partitions) - 1) * entropy**2))
-
 def main():
     args = parse_args()
-    common.start_logging()
+    styutils.start_logging()
     
     probe = ffprobe3.FFProbe(str(args.reel))
     num_frames = int(probe.streams[0].nb_frames)
@@ -104,6 +105,7 @@ def main():
         partitions = divide(args.reel, num_frames, args.write_to)
     
     logging.info(partitions)
+    logging.info('SFP: {}'.format(sfp(args.reel, partitions)))
 
 if __name__ == '__main__':
     main()

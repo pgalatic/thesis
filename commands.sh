@@ -38,7 +38,7 @@ time bash stylizeVideo_deepflow.sh videos/wow.mp4 models/checkpoint-candy-video.
 time bash stylizeVideo_deepflow.sh videos/dance.mp4 models/checkpoint-picasso-video.t7
 
 # jordan, WomanHat
-python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/jordan.mp4 /proj/videorendering-PG0/pgalatic/WomanHat.pth --local_video=videos/jordan.mp4 --local_style=styles/WomanHat.pth --local=/proj/videorendering-PG0/pgalatic/ --no_cuts
+python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/jordan.mp4 /proj/videorendering-PG0/pgalatic/WomanHat.pth --local_video=videos/jordan.mp4 --local_style=styles/WomanHat.pth --local=/proj/videorendering-PG0/pgalatic/ --read_cuts=cuts/jordan.csv
 # face, scream
 python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/face.mp4 /proj/videorendering-PG0/pgalatic/scream.pth --local_video=videos/face.mp4 --local_style=styles/scream.pth --local=/proj/videorendering-PG0/pgalatic/ --read_cuts=cuts/face.csv
 # soul, picasso
