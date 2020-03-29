@@ -182,6 +182,8 @@ def main():
     # Clean up any lingering files.
     if os.path.exists(DIVIDE_TAG):
         os.remove(DIVIDE_TAG)
+    for fname in [str(remote / name) for name in glob.glob1(str(remote), '*.ppm')]:
+        os.remove(fname)
     #for fname in [str(remote / name) for name in glob.glob1(str(remote), '*.plc')]:
     #    os.remove(fname)
     #for fname in [str(remote / name) for name in glob.glob1(str(remote), '*.png')]:
