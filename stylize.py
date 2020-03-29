@@ -5,6 +5,7 @@
 # Dosovitskiy. It organizes and executes divide-and-conquer style transfer.
 
 # STD LIB
+import re
 import os
 import pdb
 import glob
@@ -23,6 +24,18 @@ import video
 import common
 from const import *
 from core import model, optflow
+
+def most_recent_partition(remote):
+    # Check to see if the optical flow folder exists.
+    if not os.path.isdir(str(remote)):
+        # If it doesn't exist, then there are no optflow files, and we start from scratch.
+        return 1
+
+    # The most recent partition is the most recent placeholder plus 1.
+    placeholders = glob.glob1(str(remote), 'partition_*.plc')
+    if len(placeholders) == 0: return 1
+    
+    return max(map(int, [re.findall(r'\d+', plc)[0] for plc in placeholders])) + 1
 
 def claim_job(remote, partitions):
     for idx, partition in enumerate(partitions):
@@ -58,13 +71,11 @@ def stylize(style, partitions, remote):
     running = []
 
     framefiles = sorted([str(remote / name) for name in glob.glob1(str(remote), '*.ppm')])
-    
     stylizer = model.StylizationModel(weights_fname=str(style))
     partition = claim_job(remote, partitions)
     
     while partition is not None:
         frames_p = framefiles[partition[0]:partition[-1]]
-        
         # Spawn a thread to complete that job, then get the next one.
         to_run = threading.Thread(
             target=stylizer.stylize, 
@@ -80,10 +91,10 @@ def stylize(style, partitions, remote):
         partition = claim_job(remote, partitions)
     
     # Finish any remaining optical flow, to help speed along other nodes, if necessary.
-    if optflow.most_recent_optflo(remote) < len(framefiles):
+    if most_recent_partition(remote) < len(partitions):
         for partition in partitions:
             frames_p = framefiles[partition[0]:partition[-1]]
-            optflow.optflow(frames_p, remote)
+            optflow.optflow(0, frames_p, remote)
     
     # Join all remaining threads.
     logging.info('Wrapping up threads for stylization...')
@@ -123,13 +134,12 @@ def main():
     remote = pathlib.Path(args.remote) / os.path.basename(os.path.splitext(args.video)[0])
     common.makedirs(remote)
     
-    num_frames = video.split_frames(args.video, remote)
+    video.split_frames(args.video, remote)
     # Split video into individual frames
     frames = sorted([str(remote / frame) for frame in glob.glob1(str(remote), '*.ppm')])
     
     # Make sure we only test on a small number of files, if we are testing.
     if args.test:
-        num_frames = NUM_FRAMES_FOR_TEST
         to_remove = frames[NUM_FRAMES_FOR_TEST:]
         frames = frames[:NUM_FRAMES_FOR_TEST]
         for frame in to_remove:
@@ -137,7 +147,7 @@ def main():
     
     # Either read the cuts from disk or compute them manually (if applicable).
     if args.no_cuts:
-        partitions = [(0, None)]
+        partitions = [(0, len(frames))]
     elif args.read_cuts:
         partitions = cut.read_cuts(args.read_cuts, len(frames))
     elif args.test:
@@ -148,7 +158,7 @@ def main():
         partitions = [(0, q1), (q1, q2), (q2, q3), (q3, None)]
     else:
         partitions = common.wait_complete(
-            DIVIDE_TAG, cut.divide, [args.video], remote)
+            DIVIDE_TAG, cut.divide, [args.video, len(frames)], remote)
     
     # Record the time between the start of the program and preliminary setup.
     t_prelim = time.time()
@@ -158,7 +168,7 @@ def main():
     stylize(args.style, partitions, remote)
     # Wait until all output files are present.
     logging.info('Waiting for other nodes to finish stylization...')
-    while len(glob.glob1(str(remote), '*.png')) < num_frames:
+    while len(glob.glob1(str(remote), '*.png')) < len(frames):
         time.sleep(1)
     
     # Record the time between the optflow calculations and completing stylization.

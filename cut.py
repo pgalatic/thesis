@@ -17,7 +17,7 @@ from scipy import stats
 # LOCAL LIB
 import common
 
-def divide(video_path, write_to=None):
+def divide(video_path, num_frames, write_to=None):
     video_manager = sd.video_manager.VideoManager([str(video_path)])
     scene_manager = sd.scene_manager.SceneManager()
     scene_detector = sd.detectors.ContentDetector(threshold=45, min_scene_len=10)
@@ -37,6 +37,10 @@ def divide(video_path, write_to=None):
             start, end = scene[0].get_frames(), scene[1].get_frames()
             logging.info('Partition %2d frames: [%d:%d]' % (idx, start, end))
             partitions.append((start, end))
+        
+        # There's a strange bug in pySceneDetect that makes it miss some frames at the end.
+        # This fixes that bug in case it occurs.
+        partitions[-1] = (partitions[-1][0], num_frames)
         
     finally:
         video_manager.release()

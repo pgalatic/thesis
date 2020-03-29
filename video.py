@@ -6,6 +6,7 @@
 import os
 import pdb
 import sys
+import glob
 import shutil
 import logging
 import pathlib
@@ -35,7 +36,7 @@ def split_frames(target, remote, extension='.ppm'):
     num_frames = int(probe.streams[0].nb_frames)
     files_present = common.count_files(remote, extension)
     
-    if num_frames == files_present:
+    if num_frames < files_present:
         logging.info('Video is already split into {} frames'.format(num_frames))
         return num_frames
     
@@ -45,13 +46,10 @@ def split_frames(target, remote, extension='.ppm'):
     # This line is to account for extensions other than the default.
     frame_name = os.path.splitext(FRAME_NAME)[0] + extension
     subprocess.run(['ffmpeg', '-i', str(target), str(remote / frame_name)])
-    
-    # Return the number of frames.
-    logging.info('{}\tframes to process'.format(num_frames))
-    return num_frames
 
-def combine_frames(target, remote, dst, format=None, extension='.mp4', lossless=False):
+def combine_frames(target, remote, dst='out', format=None, extension='.mp4', lossless=False):
     if not format: format = OUTPUT_FORMAT
+    dst = pathlib.Path(dst)
     basename = os.path.splitext(os.path.basename(str(target)))[0]
     no_audio = str(dst / ('{}_no_audio{}'.format(basename, extension)))
     audio = str(dst / ('{}_stylized{}'.format(basename, extension)))
@@ -95,13 +93,16 @@ def combine_frames(target, remote, dst, format=None, extension='.mp4', lossless=
             '-r', '{}/{}'.format(num_frames, duration),
             no_audio
         ])
-     
+    
     # Add audio to that video.
     subprocess.run([
         'ffmpeg', '-i', no_audio, '-i', str(target),
         '-c', 'copy', '-map', '0:0', '-map', '1:1',
         audio
     ])
+    
+    # Remove the version without audio.
+    os.remove(no_audio)
 
 def parse_args():
     '''Parses arguments.'''
@@ -135,19 +136,13 @@ def main():
         print(num_frames)
         return
 
-    dst = args.dst
-    if dst == None:
-        dst = os.path.basename(os.path.splitext(args.target)[0])
-    dst = pathlib.Path('out') / dst
-    common.makedirs(dst)
-
     if args.mode == 's':
         split_frames(args.target, dst, args.extension)
     elif args.mode == 'c':
         if not args.src:
             sys.exit('Please specify a source directory.')
         combine_frames(
-            args.target, pathlib.Path(args.src), dst, format=args.format, lossless=args.lossless)
+            args.target, pathlib.Path(args.src), format=args.format, lossless=args.lossless)
 
 if __name__ == '__main__':
     main()
