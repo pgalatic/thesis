@@ -6,22 +6,16 @@
 import os
 import csv
 import pdb
-import sys
-import glob
 import logging
-import pathlib
 import argparse
 
 # EXTERNAL LIB
-import cv2
 import ffprobe3
-import numpy as np
 import scenedetect as sd
 from scipy import stats
 
 # LOCAL LIB
 import common
-from const import *
 
 def divide(video_path, write_to=None):
     video_manager = sd.video_manager.VideoManager([str(video_path)])
@@ -43,22 +37,17 @@ def divide(video_path, write_to=None):
             start, end = scene[0].get_frames(), scene[1].get_frames()
             logging.info('Partition %2d frames: [%d:%d]' % (idx, start, end))
             partitions.append((start, end))
-    
-        # Write the keys to a .csv file, if applicable.
-        if write_to:
-            # Skip the last partition to stay consistent with manual format.
-            write_cuts(write_to, partitions[:-1])
         
     finally:
         video_manager.release()
     
     return partitions
 
-def read_cuts(fname):
+def read_cuts(fname, num_frames):
     with open(fname, 'r') as f:
         rdr = csv.reader(f)
         keys = sorted([int(row[0]) for row in rdr])
-        partitions = [(idx, idy) for idx, idy in zip([0] + keys, keys + [None])]
+        partitions = [(idx, idy) for idx, idy in zip([0] + keys, keys + [num_frames])]
     
     logging.info('Number of partitions: {}'.format(len(partitions)))
     return partitions
@@ -102,15 +91,14 @@ def main():
     args = parse_args()
     common.start_logging()
     
-    if args.read_from:
-        partitions = read_cuts(args.read_from)
-    else:
-        partitions = divide(args.reel, args.write_to)
-    
     probe = ffprobe3.FFProbe(str(args.reel))
     num_frames = int(probe.streams[0].nb_frames)
     
-    partitions[-1] = (partitions[-1][0], num_frames)
+    if args.read_from:
+        partitions = read_cuts(args.read_from, num_frames)
+    else:
+        partitions = divide(args.reel, num_frames, args.write_to)
+    
     logging.info(partitions)
 
 if __name__ == '__main__':

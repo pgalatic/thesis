@@ -19,21 +19,22 @@ import ffprobe3
 import common
 from const import *
 
-def check_deps(processor):
-    check = shutil.which(processor)
+def check_deps():
+    check = shutil.which('ffmpeg')
     if not check:
-        sys.exit('Video processor {} not installed. Aborting'.format(processor))
+        sys.exit('ffmpeg not installed. Aborting')
 
-def split_frames(processor, reel, local, extension='.ppm'):
+def split_frames(target, remote, extension='.ppm'):
     # Preliminary operations to make sure that the environment is set up properly.
-    check_deps(processor)
+    check_deps()
 
     # Split video into a collection of frames. 
     # Having a local copy of the frames is preferred if working with a remote server.
     # Don't split the video if we've already done so.
-    probe = ffprobe3.FFProbe(str(reel))
+    probe = ffprobe3.FFProbe(str(target))
     num_frames = int(probe.streams[0].nb_frames)
-    files_present = common.count_files(local, extension)
+    files_present = common.count_files(remote, extension)
+    
     if num_frames == files_present:
         logging.info('Video is already split into {} frames'.format(num_frames))
         return num_frames
@@ -43,21 +44,15 @@ def split_frames(processor, reel, local, extension='.ppm'):
     
     # This line is to account for extensions other than the default.
     frame_name = os.path.splitext(FRAME_NAME)[0] + extension
-    proc = subprocess.Popen([processor, '-i', str(reel), str(local / frame_name)])
-
-    # Wait until splitting the frames is finished, so we know how many there are.
-    proc.wait()
-    
-    # Spawn a thread to upload the files to the common area (is this necessary?).
-    # threading.Thread(target=common.upload_frames...
+    subprocess.run(['ffmpeg', '-i', str(target), str(remote / frame_name)])
     
     # Return the number of frames.
-    num_frames = common.count_files(local, extension)
     logging.info('{}\tframes to process'.format(num_frames))
     return num_frames
 
-def combine_frames(processor, reel, src, dst, extension='.mp4', lossless=False):
-    basename = os.path.splitext(os.path.basename(str(reel)))[0]
+def combine_frames(target, remote, dst, format=None, extension='.mp4', lossless=False):
+    if not format: format = OUTPUT_FORMAT
+    basename = os.path.splitext(os.path.basename(str(target)))[0]
     no_audio = str(dst / ('{}_no_audio{}'.format(basename, extension)))
     audio = str(dst / ('{}_stylized{}'.format(basename, extension)))
 
@@ -71,11 +66,11 @@ def combine_frames(processor, reel, src, dst, extension='.mp4', lossless=False):
         return
 
     # Preliminary operations to make sure that the environment is set up properly.
-    check_deps(processor)
+    check_deps()
 
     # Get the original video's length. This will be necessary to properly reconstruct it.
     # TODO: Check to see if a video contains audio before attempting to add audio.
-    probe = ffprobe3.FFProbe(str(reel))
+    probe = ffprobe3.FFProbe(str(target))
     duration = probe.streams[-1].duration
     num_frames = str(probe.streams[0].nb_frames)
     
@@ -83,8 +78,8 @@ def combine_frames(processor, reel, src, dst, extension='.mp4', lossless=False):
     if lossless:
         logging.debug('Running lossless compression...')
         subprocess.run([
-            processor, 
-            '-i', str(src / OUTPUT_FORMAT),
+            'ffmpeg', 
+            '-i', str(remote / format),
             '-c:v', 'huffyuv',
             '-filter:v', 'setpts={}/{}*N/TB'.format(duration, num_frames),
             '-r', '{}/{}'.format(num_frames, duration),
@@ -93,7 +88,7 @@ def combine_frames(processor, reel, src, dst, extension='.mp4', lossless=False):
     else:
         logging.debug('Running lossy compression...')
         subprocess.run([
-            processor, '-i', str(src / OUTPUT_FORMAT),
+            'ffmpeg', '-i', str(remote / format),
             '-c:v', 'libx264', '-preset', 'veryslow',
             '-pix_fmt', 'yuv420p',
             '-filter:v', 'setpts={}/{}*N/TB'.format(duration, num_frames),
@@ -103,7 +98,7 @@ def combine_frames(processor, reel, src, dst, extension='.mp4', lossless=False):
      
     # Add audio to that video.
     subprocess.run([
-        processor, '-i', no_audio, '-i', str(reel),
+        'ffmpeg', '-i', no_audio, '-i', str(target),
         '-c', 'copy', '-map', '0:0', '-map', '1:1',
         audio
     ])
@@ -113,20 +108,18 @@ def parse_args():
     ap = argparse.ArgumentParser()
     
     # Required arguments
-    ap.add_argument('mode', type=str,
+    ap.add_argument('mode', type=str, choices=['c', 's', 'n'],
         help='Whether or not to split or combine frames. Options: (s)plit, (c)ombine, (n)um_frames')
-    ap.add_argument('reel', type=str,
+    ap.add_argument('target', type=str,
         help='The name of the video (locally, on disk).')
     
     # Optional arguments
     ap.add_argument('--src', type=str, nargs='?', default=None,
         help='The path to the folder in which the frames are contained, if combining them.')
-    ap.add_argument('--dst', type=str, default=None,
-        help='The path to the folder in which the product(s) of the operation will be placed. By default, it will place products in a folder derived from the name of the reel.')
+    ap.add_argument('--format', type=str, default=None,
+        help='The format of image filenames, when combining frames, e.g. out-%05d.png [None].')
     ap.add_argument('--extension', type=str, nargs='?', default='.png',
         help='The extension used for the frames of a split video. If performing manual cuts, set this to .png [.ppm].')
-    ap.add_argument('--processor', type=str, nargs='?', default='ffmpeg',
-        help='The video processer to use, either ffmpeg (preferred) or avconv (untested) [ffmpeg].')
     ap.add_argument('--lossless', action='store_true',
         help='Set in order to use a lossless video encoding, which will create an extremely large video file.')
     
@@ -136,26 +129,25 @@ def main():
     args = parse_args()
     common.start_logging()
     
-    if args.mode == 'n' or args.mode == 'num_frames':
-        probe = ffprobe3.FFProbe(str(args.reel))
+    if args.mode == 'n':
+        probe = ffprobe3.FFProbe(str(args.target))
         num_frames = str(probe.streams[0].nb_frames)
         print(num_frames)
         return
 
     dst = args.dst
     if dst == None:
-        dst = os.path.basename(os.path.splitext(args.reel)[0])
+        dst = os.path.basename(os.path.splitext(args.target)[0])
     dst = pathlib.Path('out') / dst
     common.makedirs(dst)
 
-    if args.mode == 's' or args.mode == 'split':
-        split_frames(args.processor, args.reel, dst, args.extension)
-    elif args.mode == 'c' or args.mode == 'combine':
+    if args.mode == 's':
+        split_frames(args.target, dst, args.extension)
+    elif args.mode == 'c':
         if not args.src:
             sys.exit('Please specify a source directory.')
-        combine_frames(args.processor, args.reel, pathlib.Path(args.src), dst, lossless=args.lossless)
-    else:
-        sys.exit('Mode {} not recognized; please try again.'.format(args.mode))
+        combine_frames(
+            args.target, pathlib.Path(args.src), dst, format=args.format, lossless=args.lossless)
 
 if __name__ == '__main__':
     main()

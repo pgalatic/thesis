@@ -184,3 +184,4 @@ def wait_for(fname):
     while not os.path.exists(fname):
         time.sleep(1)
     logging.debug('...{} found!'.format(fname))
+    return fname
