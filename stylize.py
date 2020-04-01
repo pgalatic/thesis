@@ -69,10 +69,15 @@ def wait_complete(tag, target, args, remote):
         # Until the placeholder is gone, the file may still be incompletely uploaded.
         while os.path.exists(placeholder):
             time.sleep(1)
-            write_to = str(remote / tag)
         
-        with open(write_to, 'rb') as handle:
-            return pickle.load(handle)
+        try:
+            with open(write_to, 'rb') as handle:
+                return pickle.load(handle)
+        except FileNotFoundError:
+            # This error is more troublesome -- it means that the output file was 
+            # deleted somehow. Still, we have to try and handle it gracefully, in 
+            # case no file was needed in the first place.
+            logging.error('ERROR! {} could not be loaded!'.format(write_to))
     finally:
         # Remove the placeholder in either case.
         if os.path.exists(placeholder):
