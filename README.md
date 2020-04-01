@@ -1,4 +1,4 @@
-# Divide and Conquer in Fast Artistic Videos
+# Divide and Conquer in Neural Video Stylization
 A thesis by Paul Galatic, a graduate student at the Rochester Institute of Technology (RIT) in New York State.
 
 ## Background

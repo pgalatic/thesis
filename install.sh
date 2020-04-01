@@ -14,8 +14,7 @@ cd core
 bash install.sh
 git checkout master
 cd -
-mv core/styles/* styles
-rm -r core/styles
+cp core/styles/* styles
 
 # Clean installation
 sudo apt-get -y update
