@@ -100,3 +100,6 @@ python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pg
 python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/transistor.mp4 /proj/videorendering-PG0/pgalatic/mosaic.pth --local_video=videos/transistor.mp4 --local_style=styles/mosaic.pth --local=/proj/videorendering-PG0/pgalatic/ --read_cuts=cuts/transistor.csv
 # hatkid, schlief
 python3 thesis.py /proj/videorendering-PG0/pgalatic/ /proj/videorendering-PG0/pgalatic/hatkid.mp4 /proj/videorendering-PG0/pgalatic/schlief.pth --local_video=videos/hatkid.mp4 --local_style=styles/schlief.pth --local=/proj/videorendering-PG0/pgalatic/ --read_cuts=cuts/hatkid.csv
+
+# silksong, mosaic
+python3 stylize.py /proj/videorendering-PG0/pgalatic/ videos/silksong.mp4 styles/mosaic.pth --read_cuts=cuts/silksong.csv

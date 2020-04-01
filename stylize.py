@@ -226,14 +226,11 @@ def main():
         wait_complete(COMBINE_TAG, video.combine_frames, [args.video, remote], remote)
     
     # Clean up any lingering files.
-    for fname in [str(remote / name) for name in glob.glob1(str(remote), '*.pkl')]:
-        os.remove(fname)
-    for fname in [str(remote / name) for name in glob.glob1(str(remote), '*.ppm')]:
-        os.remove(fname)
-    #for fname in [str(remote / name) for name in glob.glob1(str(remote), '*.plc')]:
-    #    os.remove(fname)
-    #for fname in [str(remote / name) for name in glob.glob1(str(remote), '*.png')]:
-    #    os.remove(fname)
+    exts_to_remove = ['*.pkl', '*.ppm', '*.plc', '*.flo', '*.pgm'] # add .png to remove output files
+    for fname in os.listdir(str(remote)):
+        parts = os.path.splitext(fname)
+        if len(parts) > 1 and parts[1] in exts_to_remove:
+            os.remove(str(remote / fname))
     
     # Log all the times for good measure.
     t_end = time.time()
