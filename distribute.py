@@ -20,8 +20,8 @@ import threading
 
 # LOCAL LIB
 import cut
-from const import *
-from core import model, optflow, video, styutils
+from dconst import *
+from core import model, video, styutils
 
 def wait_complete(tag, target, args, remote):
     '''
@@ -83,7 +83,7 @@ def wait_complete(tag, target, args, remote):
         if os.path.exists(placeholder):
             os.remove(placeholder)
 
-def claim_job(remote, partitions):
+def claim_job(partitions, remote):
     for idx, partition in enumerate(partitions):
         if len(partition) == 0:
             logging.error('Skipping a partition with length 0! Partition: {}'.format(idx))
@@ -117,7 +117,7 @@ def stylize(style, partitions, remote, fast):
 
     framefiles = sorted([str(remote / name) for name in glob.glob1(str(remote), '*.ppm')])
     stylizer = model.StylizationModel(weights_fname=str(style))
-    partition = claim_job(remote, partitions)
+    partition = claim_job(partitions, remote)
     
     while partition is not None:
         frames_p = framefiles[partition[0]:partition[-1]]
@@ -133,13 +133,13 @@ def stylize(style, partitions, remote, fast):
             running = [thread for thread in running if thread.isAlive()]
             time.sleep(1)
         
-        partition = claim_job(remote, partitions)
+        partition = claim_job(partitions, remote)
     
     # Finish any remaining optical flow, to help speed along other nodes, if necessary.
-    if optflow.most_recent_optflow(remote) < styutils.count_files(remote, '.ppm'):
+    if styutils.count_files(remote, '.plc') < styutils.count_files(remote, '.ppm'):
         for partition in partitions:
             frames_p = framefiles[partition[0]:partition[-1]]
-            optflow.optflow(0, frames_p, remote, fast)
+            stylizer.optflow_thread(partition[0], frames_p, remote, fast)
     
     # Join all remaining threads.
     logging.info('Wrapping up threads for stylization...')
@@ -223,7 +223,7 @@ def main():
     
     # Combining frames into a final video won't work if we're testing on only a portion of the frames.
     if not args.test:
-        wait_complete(COMBINE_TAG, video.combine_frames, [args.video, remote], remote)
+        wait_complete(COMBINE_TAG, video.combine_frames, [args.video, remote, remote], remote)
     
     # Clean up any lingering files.
     exts_to_remove = ['*.pkl', '*.ppm', '*.plc', '*.flo', '*.pgm'] # add .png to remove output files
