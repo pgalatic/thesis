@@ -108,7 +108,7 @@ def deepflow(start_name, end_name, forward_name, backward_name, downsamp_factor=
     
     # Compute backward optical flow.
     backward_dm = subprocess.Popen([
-        './core/deepmatching-static', end_name, start_name, '-nt', '0', '-downscale', downsamp_factor, '|',
+        './core/deepmatching-static', end_name, start_name, '-nt', '0', '-downscale', downsamp_factor,
     ], stdout=subprocess.PIPE)
     subprocess.run([
         './core/deepflow2-static', end_name, start_name, backward_name, '-match'

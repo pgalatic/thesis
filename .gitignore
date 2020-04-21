@@ -6,6 +6,7 @@ out/
 products/
 styles/*.pth
 videos/*.mp4
+spynet/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

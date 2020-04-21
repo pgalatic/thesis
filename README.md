@@ -1,26 +1,17 @@
 # Divide and Conquer in Fast Artistic Videos
 A thesis by Paul Galatic, a graduate student at the Rochester Institute of Technology (RIT) in New York State.
 
+# NOTICE
+
+This is the **reproducibility** branch. If you use this code, know that it is much less efficient than the current master branch. If you are trying to reproduce my results and you are having trouble, raise an issue. Otherwise, please try to use the current master before you point out any flaws.
+
 ## Background
 
-Neural Style Transfer is the process of replacing the texture of one image with the texture of another image. While there are many implementation of neural style transfer that can stylize a video in a relatively short amount of time, there are few that account for the differences between frames in order to create a smooth and consistent final product. 
+Neural Style Transfer is the process of redrawing one image in the style of another image. While there are many implementation of neural style transfer for single images, there are few that can do the same for video without introducing undesirable flickering effects and other artifacts. Even fewer can stylize a video in a reasonable amount of time.
 
-This work is based on an implementation of [Ruder et al.](https://github.com/manuelruder/fast-artistic-videos) in 2018. Please site their work if you use this repository as part of your project or research. This repository is an effort to simply their implementation and extend it to work on a distributed computing cluster.
+This work addresses several weaknesses of its predecessor, [Fast Artistic Videos](https://github.com/manuelruder/fast-artistic-videos) by Ruder et al. (2018) while preserving all of its strengths. Installation is far faster and easier, and runtime is cut by over 50%. 
 
-```
-@Article{Ruder18,
-author       = "M. Ruder and A. Dosovitskiy and T. Brox",
-title        = "Artistic style transfer for videos and spherical images",
-journal      = "International Journal of Computer Vision",
-number       = "11",
-volume       = "126",
-pages        = "1199-1219",
-month        = "Nov",
-year         = "2018",
-note         = "online first",
-url          = "http://lmb.informatik.uni-freiburg.de/Publications/2018/RDB18"
-}
-```
+That said, runtime in this implementation will still run into the hours on any video longer than a few seconds due to inefficiencies in the code that are left unfixed intentionally for the purpose of reproducibility.
 
 ## Installation
 
@@ -30,26 +21,9 @@ All nodes involved in computation should have the following priors:
 * Python >= 3.5.6
 * A video processing tool like [FFMPEG](https://www.ffmpeg.org/) that supports libx264
 
-Once those are installed, run the following two commands on each node to install the rest.
+Once those are installed, run the following command on each node to install the rest.
 ```
 bash install.sh
-pip install -r requirements.txt
-```
-
-Optional programs that may be useful:
-* A remote file system mount like [SFTP Drive V2](https://www.nsoftware.com/sftp/drive/download.aspx)
-
-### Setting up a Shared Directory with SFTP Drive V2
-
-This implementation is focused more on parallelization and cluster computing rather than networking. The simplest solution is to have a file system mount that appears as though it is local to all the machines involved. Many computing clusters have this set up natively, but it should also work for any number of computers that participate by implicitly communicating with a central node. A tool I found useful for this purpose is SFTP Drive V2.
-
-In my preliminary experiments, I used two Windows machines (with Windows Subsystem for Linux, or WSL) and one remote Linux machine. Because my setup was a bit nontraditional to say the least, I used STFP Drive V2 to get started. However, the program should function the same as long as the path specified by the argument `nfs` is remotely accessible to all computers. Here's what I did:
-
-1. Log in to all the requisite computers. Designate one computer as Master and create a folder there that will be mounted by the other computers.
-1. Go to each non-Master machine and mount the Master drive. I recommend using a public/private RSA key for this that is distributed manually between all computers.
-1. If you're using WSL, you cannot directly access a remote directory mounted to a letter drive (so far as I know). A way around this creating a symbolic link. Here is the command I use in WSL to link the `O:` drive to a folder I created, `/mnt/o`. If it fails, first double-check that your link is active and that you can transfer files manually between your local computer and the remote system.
-```
-sudo mount -t drvfs 'O:' /mnt/o
 ```
 
 ## Usage Guide
@@ -81,9 +55,7 @@ Nodes are assumed to be of roughly equivalent computation power. The program ope
 ## Known Issues / Future Work
 
 Known issues:
-* Because of an interaction between Python's subprocess and the optical flow calculations, a benign message `error: unexpected parameter '|'` is often printed.
-* If the shared filesystem runs out of memory, the program may loop endlessly trying to create the same optical flow or stylization images, because Python's open(fname, 'x') will execute successfully even though the file is not created.
-* If the program produces images that are mostly or entirely blank, that means that the Torch installation is faulty. It is very particular. I fixed this issue by uninstalling Torch, cloning an old (Torch distro)[https://github.com/torch/distro], running install-deps, install.sh, and using Luarocks to install [torch, nn, image, lua-cjson]. Then, I ran update.sh and the problem was fixed. 
+* If the filesystem runs out of memory, which is very likely with any HD video larger than a minute, the program may loop endlessly trying to create the same optical flow or stylization files, because Python's open(fname, 'x') will execute successfully even though the file is not created.
 
 Future work:
-* Enabling CUDA/CUDNN is an important priority, and is unfortunately more difficult due to circumstances involving the core implementation of this program. The core program is currently implemented in Torch. As noted in [Issue #7](https://github.com/manuelruder/fast-artistic-videos/issues/7), Torch's CUDA/CUDNN hooks are extremely finicky and often result in unusable outputs. I have tried many different version of Torch and CUDA/CUDNN with no success resolving this issue, and it will probably involve a conversion of the core implementation to pyTorch, an avenue I am pursuing as another part of my graduate work.
+* Because this is the reproducibility repository, it will never be updated beyond fixing crashes and updating documentation.
