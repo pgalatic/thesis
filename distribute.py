@@ -108,7 +108,7 @@ def claim_job(partitions, remote):
     # There are no more jobs.
     return None
 
-def stylize(style, partitions, remote, fast):
+def stylize(style, partitions, remote, method):
     # Sort in descending order of length. This will mitigate the slowdown caused by very large partitions.
     # TODO Allow user to select sorting strategy
     partitions = sorted(partitions, key=lambda x: x[1] - x[0], reverse=True)
@@ -124,7 +124,7 @@ def stylize(style, partitions, remote, fast):
         # Spawn a thread to complete that job, then get the next one.
         to_run = threading.Thread(
             target=stylizer.stylize, 
-            args=(partition[0], frames_p, remote, fast))
+            args=(partition[0], frames_p, remote, method))
         running.append(to_run)
         to_run.start()
         
@@ -161,8 +161,9 @@ def parse_args():
     # Optional arguments
     ap.add_argument('--test', action='store_true',
         help='Test the algorithm by stylizing only a few frames of the video, rather than all of the frames.')
-    ap.add_argument('--fast', action='store_true',
-        help='Use Farneback optical flow, which is faster than the default, DeepFlow2.')
+    ap.add_argument('--optflow', choices=['farneback', 'spynet', 'flownet', 'deepflow2'], 
+        default='spynet',
+        help='Choice of optical flow calculation. Farneback is the fastest, but least accurate. Deepflow2 is the slowest, but most accurate. Spynet is the best balance on the CPU.')
     ap.add_argument('--no_cuts', action='store_true',
         help='If a video has no cuts, use this to denote that and skip unnecessary computation.')
     ap.add_argument('--read_cuts', type=str, nargs='?', default=None,
@@ -211,7 +212,7 @@ def main():
     logging.info('{} seconds\tpreliminary setup'.format(round(t_prelim - t_start)))
     
     # Compute neural style transfer.
-    stylize(args.style, partitions, remote, args.fast)
+    stylize(args.style, partitions, remote, args.optflow)
     # Wait until all output files are present.
     logging.info('Waiting for other nodes to finish stylization...')
     while len(glob.glob1(str(remote), '*.png')) < len(frames):
@@ -223,7 +224,7 @@ def main():
     
     # Combining frames into a final video won't work if we're testing on only a portion of the frames.
     if not args.test:
-        wait_complete(COMBINE_TAG, video.combine_frames, [args.video, remote, remote], remote)
+        wait_complete(COMBINE_TAG, video.combine_frames, [args.video, remote, pathlib.Path(args.remote)], remote)
     
     # Clean up any lingering files.
     exts_to_remove = ['*.pkl', '*.ppm', '*.plc', '*.flo', '*.pgm'] # add .png to remove output files
