@@ -11,8 +11,8 @@ pip3 install --upgrade pip
 pip3 install -r requirements.txt
 git submodule update --init
 cd core
-bash install.sh
 git checkout master
+bash install.sh
 cd -
 cp core/styles/* styles
 

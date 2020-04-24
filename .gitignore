@@ -5,6 +5,7 @@ logs/
 out/
 products/*.mp4
 products/test/
+products/defense-materials/
 styles/*.pth
 videos/*.mp4
 
