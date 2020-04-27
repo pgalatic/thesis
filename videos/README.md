@@ -18,14 +18,14 @@ The sources for the videos used in the assessment of my thesis are as follows:
 | kiwi.mp4       | 466      | 5      | [🥝](https://www.youtube.com/watch?v=j1B_ScRYU4I)                                                                                 |
 | walk.mp4       | 500      | 12     | [he walk](https://www.youtube.com/watch?v=xa1Zn6XrDlM)                                                                            |
 | eggdog.mp4     | 674      | 13     | [eggdog diner](https://www.youtube.com/watch?v=l0Nc0-dFwAI)                                                                       |
-| infinity.mp4   | 732      | 25     | [Marvel Studios’ Avengers: Infinity War - Big Game Spot](https://www.youtube.com/watch?v=pVxOVlm_lE8)                             |
+| infinity.mp4   | 732      | 25     | [Marvel Studios’ Avengers: Infinity War](https://www.youtube.com/watch?v=pVxOVlm_lE8)                             |
 | zelda.mp4      | 899      | 18     | [ZELDA : Breath of the Wild - Official Japanese trailer HD](https://www.youtube.com/watch?v=HyAWu86POpg)                          |
 | ncis.mp4       | 914      | 32     | [NCIS OPENING SEASON 5](https://www.youtube.com/watch?v=tBqC9QJO58k)                                                              |
 | roll.mp4       | 1104     | 12     | [roll](https://www.youtube.com/watch?v=gGn6ahUYkmY)                                                                            |
 | endgame.mp4    | 1440     | 33     | [Marvel Studios’ Avengers: Endgame | Special Look](https://www.youtube.com/watch?v=KCSNFZKbhZE)                                   |
 | gate.mp4       | 1739     | 9      | [Stargate SG-1 Opening season 7 HD](https://www.youtube.com/watch?v=5qfQHEj_f4Y)                                                  |
 | ai.mp4         | 1745     | 0      | [Reinforcement Learning with Prediction-Based Rewards](https://www.youtube.com/watch?v=40VZeFppDEM)                               |
-| ori.mp4        | 1798     | 29     | [Ori and the Will of the Wisps - Official Gameplay Trailer | The Game Awards 2019](https://www.youtube.com/watch?v=miJmKpzbls4)   |
+| ori.mp4        | 1798     | 29     | [Ori and the Will of the Wisps - Official Gameplay Trailer](https://www.youtube.com/watch?v=miJmKpzbls4)   |
 | smash.mp4      | 1802     | 3      | [Super Smash Bros. Ultimate - More Fighters Trailer](https://www.youtube.com/watch?v=cjdfqXIM-Ko)                                 |
 | obra.mp4       | 1972     | 11     | [Return of the Obra Dinn - Nintendo Switch Reveal Trailer (HD 1080P)](https://www.youtube.com/watch?v=uzB-_Y-PAa8)                |
 | sekiro.mp4     | 2013     | 31     | [SEKIRO: SHADOWS DIE TWICE - Story Trailer 2019 [PS4]](https://www.youtube.com/watch?v=ejsPm03-cN4)                               |

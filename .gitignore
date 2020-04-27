@@ -3,9 +3,7 @@
 core/
 logs/
 out/
-products/*.mp4
-products/test/
-products/defense-materials/
+products/
 styles/*.pth
 videos/*.mp4
 

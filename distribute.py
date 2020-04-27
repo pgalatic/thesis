@@ -136,10 +136,11 @@ def stylize(style, partitions, remote, method):
         partition = claim_job(partitions, remote)
     
     # Finish any remaining optical flow, to help speed along other nodes, if necessary.
+    # FIXME: This will result in unnecesarily calculating optical flow files between partitions.
     if styutils.count_files(remote, '.plc') < styutils.count_files(remote, '.ppm'):
         for partition in partitions:
             frames_p = framefiles[partition[0]:partition[-1]]
-            stylizer.optflow_thread(partition[0], frames_p, remote, fast)
+            stylizer.optflow_thread(partition[0], frames_p, remote, method)
     
     # Join all remaining threads.
     logging.info('Wrapping up threads for stylization...')
@@ -152,7 +153,7 @@ def parse_args():
     
     # Required arguments
     ap.add_argument('remote', type=str,
-        help='The directory common to all nodes, e.g. out/.')
+        help='The directory common to all nodes, e.g. out/')
     ap.add_argument('video', type=str,
         help='The path to the stylization target, e.g. out/foo.mp4')
     ap.add_argument('style', type=str,
