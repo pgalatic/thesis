@@ -12,7 +12,7 @@ pip3 install -r requirements.txt
 git submodule update --init
 cd core
 bash install.sh
-git checkout master
+git checkout repro
 cd -
 mv core/styles/* styles
 rm -r core/styles
