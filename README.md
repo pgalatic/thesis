@@ -11,9 +11,9 @@ If you intend to run stylization on only one computer, use [this repository](htt
 
 ## Installation
 
-1. Ensure all computers involved have at least Ubuntu >= 16.04 (see [WSL](https://docs.microsoft.com/en-us/windows/wsl/install-win10) if using Windows), Python >= 3.5.6, and that they have an FFMPEG installation compiled with libx264.
+1. Ensure all computers involved have at least Ubuntu >= 16.04 (see [WSL](https://docs.microsoft.com/en-us/windows/wsl/install-win10) if using Windows), Python >= 3.6.1, and that they have an FFMPEG installation compiled with libx264.
 1. Clone this repository
-1. Run `install.sh`
+1. Run `bash install.sh`
 
 ## Usage Guide
 
@@ -59,6 +59,7 @@ If you use my code, please include a link back to this repository. If you use it
 ## Known Issues
 
 * Any known issues in in the [core respository](https://github.com/pgalatic/fast-artistic-videos-pytorch).
+* Installation may fail to install requirements on the first pass depending on your setup. Do NOT try to install with `sudo`. Instead, run `pip3 install -r requirements.txt` on all the requirements.txt files in the repository and subrepositories.
 
 ## Future Work
 
