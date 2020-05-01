@@ -162,7 +162,7 @@ def parse_args():
     # Optional arguments
     ap.add_argument('--test', action='store_true',
         help='Test the algorithm by stylizing only a few frames of the video, rather than all of the frames.')
-    ap.add_argument('--optflow', choices=['farneback', 'spynet', 'flownet', 'deepflow2'], 
+    ap.add_argument('--optflow', choices=['farneback', 'spynet', 'deepflow2'], 
         default='spynet',
         help='Choice of optical flow calculation. Farneback is the fastest, but least accurate. Deepflow2 is the slowest, but most accurate. Spynet is the best balance on the CPU.')
     ap.add_argument('--no_cuts', action='store_true',

@@ -31,7 +31,7 @@ Other options can be shown by running
 ```
 python distribute.py -h
 ```
-In particular, consider appending `--fast`, which makes the program use Farneback optical flow calculations. They aren't as accurate as DeepFlow2, but they are an order of magnitude faster, and perform adequately in most circumstances.
+By default, this algorithm uses the [SPyNet](https://arxiv.org/abs/1611.00850) architecture to calculate optical flow, which is the best balance between speed and quality when running on a CPU. Please read the help message carefully so that you are aware of all the options available in the latest release, as the choice of optical flow calculator will dramatically affect both the quality of the final stylized video and the total processing time.
 
 ## Procedure Description 
 
@@ -42,17 +42,17 @@ Nodes are assumed to be of roughly equivalent computation power. The program ope
 
 ## Credits
 
-This work is based on [Fast Artistic Videos](https://github.com/manuelruder/fast-artistic-videos). It relies on static binaries of [DeepMatching](https://thoth.inrialpes.fr/src/deepmatching/) and [Deepflow2](https://thoth.inrialpes.fr/src/deepflow/).
+This work is based on [Fast Artistic Videos](https://github.com/manuelruder/fast-artistic-videos). It relies on static binaries of [DeepMatching](https://thoth.inrialpes.fr/src/deepmatching/) and [Deepflow2](https://thoth.inrialpes.fr/src/deepflow/), among other external libraries.
 
 If you use my code, please include a link back to this repository. If you use it for research, please include this citation.
 
 ```
 @mastersthesis{Galatic2020Divide
-author  = "Paul Galatic",
-title   = "Divide and Conquer in Video Style Transfer",
-school  = "Rochester Institute of Technology - RIT",
-year    = "2020",
-url     = "https://github.com/pgalatic/thesis"
+  author  = "Paul Galatic",
+  title   = "Divide and Conquer in Video Style Transfer",
+  school  = "Rochester Institute of Technology - RIT",
+  year    = "2020",
+  url     = "https://github.com/pgalatic/thesis"
 }
 ```
 

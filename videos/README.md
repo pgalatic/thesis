@@ -22,7 +22,7 @@ The sources for the videos used in the assessment of my thesis are as follows:
 | zelda.mp4      | 899      | 18     | [ZELDA : Breath of the Wild - Official Japanese trailer HD](https://www.youtube.com/watch?v=HyAWu86POpg)                          |
 | ncis.mp4       | 914      | 32     | [NCIS OPENING SEASON 5](https://www.youtube.com/watch?v=tBqC9QJO58k)                                                              |
 | roll.mp4       | 1104     | 12     | [roll](https://www.youtube.com/watch?v=gGn6ahUYkmY)                                                                            |
-| endgame.mp4    | 1440     | 33     | [Marvel Studios’ Avengers: Endgame | Special Look](https://www.youtube.com/watch?v=KCSNFZKbhZE)                                   |
+| endgame.mp4    | 1440     | 33     | [Marvel Studios’ Avengers: Endgame](https://www.youtube.com/watch?v=KCSNFZKbhZE)                                   |
 | gate.mp4       | 1739     | 9      | [Stargate SG-1 Opening season 7 HD](https://www.youtube.com/watch?v=5qfQHEj_f4Y)                                                  |
 | ai.mp4         | 1745     | 0      | [Reinforcement Learning with Prediction-Based Rewards](https://www.youtube.com/watch?v=40VZeFppDEM)                               |
 | ori.mp4        | 1798     | 29     | [Ori and the Will of the Wisps - Official Gameplay Trailer](https://www.youtube.com/watch?v=miJmKpzbls4)   |
