@@ -24,7 +24,7 @@ The sources for the videos used in the assessment of my thesis are as follows:
 | endgame.mp4    | 1440     | 33     | [Marvel Studios’ Avengers: Endgame](https://www.youtube.com/watch?v=KCSNFZKbhZE)                                   |
 | gate.mp4       | 1739     | 9      | [Stargate SG-1 Opening season 7 HD](https://www.youtube.com/watch?v=5qfQHEj_f4Y)                                                  |
 | ai.mp4         | 1745     | 0      | [Reinforcement Learning with Prediction-Based Rewards](https://www.youtube.com/watch?v=40VZeFppDEM)                               |
-| ori.mp4        | 1798     | 29     | [Ori and the Will of the Wisps - Official Gameplay Trailer | The Game Awards 2019](https://www.youtube.com/watch?v=miJmKpzbls4)   |
+| ori.mp4        | 1798     | 29     | [Ori and the Will of the Wisps - Official Gameplay Trailer](https://www.youtube.com/watch?v=miJmKpzbls4)   |
 | smash.mp4      | 1802     | 3      | [Super Smash Bros. Ultimate - More Fighters Trailer](https://www.youtube.com/watch?v=cjdfqXIM-Ko)                                 |
 | obra.mp4       | 1972     | 11     | [Return of the Obra Dinn - Nintendo Switch Reveal Trailer (HD 1080P)](https://www.youtube.com/watch?v=uzB-_Y-PAa8)                |
 | sekiro.mp4     | 2013     | 31     | [SEKIRO: SHADOWS DIE TWICE - Story Trailer 2019](https://www.youtube.com/watch?v=ejsPm03-cN4)                               |
