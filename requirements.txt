@@ -2,7 +2,7 @@ opencv_python==4.2.0.32
 torch==1.4.0
 ffprobe3==0.1.2
 flowiz==2.3.1
-scipy==1.4.1
+scipy==1.10.0
 torchvision==0.5.0
 numpy==1.17.3
 moviepy==1.0.2
